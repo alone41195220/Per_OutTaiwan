@@ -14,6 +14,7 @@ createApp({
         const selectedGender = ref('');
         const searchQuery = ref('');
         const isDarkMode = ref(false);
+        const isMenuOpen = ref(false);
         const packingList = reactive([]);
         const announcementConfig = reactive({
             countries: {}
@@ -34,43 +35,34 @@ createApp({
             transform: 'scaleX(1)'
         });
 
-        const triggerDog = () => {
-            if (dogActive.value) return;
-            
-            const fromLeft = Math.random() > 0.5;
-            dogStyle.left = fromLeft ? '-150px' : (window.innerWidth + 150) + 'px';
-            // Flip the scaleX: if fromLeft is true (moving L->R), flip to face right.
-            dogStyle.transform = fromLeft ? 'scaleX(-1)' : 'scaleX(1)';
-            dogActive.value = true;
+        const triggerAnimal = (activeState, styleObject, offset, baseDuration) => {
+            if (activeState.value) return;
 
-            gsap.to(dogStyle, {
-                left: fromLeft ? (window.innerWidth + 150) + 'px' : '-150px',
-                duration: 2.5 + Math.random() * 2.5, // Speed -20% (Duration +25%)
-                ease: "none",
+            const fromLeft = Math.random() > 0.5;
+            const screenWidth = window.innerWidth;
+            
+            // 初始位置
+            styleObject.left = fromLeft ? `-${offset}px` : `${screenWidth + offset}px`;
+            
+            // 轉向控制：由左向右時水平翻轉
+            styleObject.transform = fromLeft ? 'scaleX(-1)' : 'scaleX(1)';
+            
+            activeState.value = true;
+
+            gsap.to(styleObject, {
+                left: fromLeft ? `${screenWidth + offset}px` : `-${offset}px`,
+                // 增加隨機擾動，避免每次速度都一模一樣
+                duration: baseDuration + Math.random() * 2, 
+                ease: "power1.inOut", // 使用緩動函數讓啟動與停止更自然
                 onComplete: () => {
-                    dogActive.value = false;
+                    activeState.value = false;
                 }
             });
         };
 
-        const triggerBird = () => {
-            if (birdActive.value) return;
-            
-            const fromLeft = Math.random() > 0.5;
-            birdStyle.left = fromLeft ? '-100px' : (window.innerWidth + 100) + 'px';
-            // Flip the scaleX: if fromLeft is true (moving L->R), flip to face right.
-            birdStyle.transform = fromLeft ? 'scaleX(-1)' : 'scaleX(1)';
-            birdActive.value = true;
-
-            gsap.to(birdStyle, {
-                left: fromLeft ? (window.innerWidth + 100) + 'px' : '-100px',
-                duration: 5 + Math.random() * 3.75, // Speed -20% (Duration +25%)
-                ease: "power1.inOut",
-                onComplete: () => {
-                    birdActive.value = false;
-                }
-            });
-        };
+        // 使用方式：
+        const triggerDog = () => triggerAnimal(dogActive, dogStyle, 150, 7.5);  // 6 * 1.25 = 7.5
+        const triggerBird = () => triggerAnimal(birdActive, birdStyle, 100, 15); // 12 * 1.25 = 15
 
         const triggerPeek = () => {
             peekingActive.value = true;
@@ -354,6 +346,7 @@ createApp({
             currentStep.value = 1;
             selectedCountry.value = '';
             selectedGender.value = '';
+            isMenuOpen.value = false;
             saveState();
         };
 
@@ -432,233 +425,171 @@ createApp({
         // Three.js Background
         const initThree = () => {
             const canvas = document.getElementById('three-canvas');
+            if (!canvas) return;
+
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, isDarkMode.value ? 0.3 : 0.6);
+            // --- 1. 響應式配置 ---
+            const isMobile = window.innerWidth < 768;
+            const MAX_BUBBLES = isMobile ? 300 : 200; 
+            const spreadX = isMobile ? 35 : 75; 
+
+            // --- 2. 燈光系統 (強化對比) ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, isDarkMode.value ? 0.5 : 1.0);
             scene.add(ambientLight);
-            const pointLight = new THREE.PointLight(0xffffff, isDarkMode.value ? 0.8 : 1.2);
-            pointLight.position.set(10, 10, 10);
+            const pointLight = new THREE.PointLight(0xffffff, isDarkMode.value ? 1.0 : 2.0);
+            pointLight.position.set(20, 30, 20);
             scene.add(pointLight);
 
-            // Sci-fi Starfield
-            const starCount = 5000; // Increased
+            // --- 3. 背景 A: 星空 (黑夜限定) ---
+            const starCount = 8000;
             const starGeometry = new THREE.BufferGeometry();
             const starPositions = new Float32Array(starCount * 3);
-            const starSizes = new Float32Array(starCount);
             for (let i = 0; i < starCount; i++) {
-                starPositions[i * 3] = (Math.random() - 0.5) * 150;
-                starPositions[i * 3 + 1] = (Math.random() - 0.5) * 150;
-                starPositions[i * 3 + 2] = (Math.random() - 0.5) * 150;
-                starSizes[i] = Math.random();
+                starPositions[i * 3] = (Math.random() - 0.5) * 250;
+                starPositions[i * 3 + 1] = (Math.random() - 0.5) * 250;
+                starPositions[i * 3 + 2] = -60 - Math.random() * 150;
             }
             starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-            starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
-            
-            const starMaterial = new THREE.PointsMaterial({ 
-                color: isDarkMode.value ? 0xffffff : 0x475569, 
-                size: 0.25, 
-                transparent: true, 
-                opacity: isDarkMode.value ? 0.8 : 0.6, 
-                blending: isDarkMode.value ? THREE.AdditiveBlending : THREE.NormalBlending
+            const starMaterial = new THREE.PointsMaterial({
+                size: 0.15,
+                color: 0xffffff,
+                transparent: true,
+                opacity: isDarkMode.value ? 0.8 : 0,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
             });
             const stars = new THREE.Points(starGeometry, starMaterial);
-            stars.frustumCulled = false; // Prevent stars from being culled
             scene.add(stars);
 
-            renderer.setClearColor(0x000000, 0); // Ensure transparent background
+            // --- 4. 背景 B: 幾何網格 ---
+            const geoNetGeometry = new THREE.IcosahedronGeometry(75, 2);
+            const geoNetMaterial = new THREE.MeshBasicMaterial({
+                color: isDarkMode.value ? 0x044e3a : 0xaaaaaa,
+                wireframe: true,
+                transparent: true,
+                opacity: isDarkMode.value ? 0.2 : 0.05,
+            });
+            const geoNet = new THREE.Mesh(geoNetGeometry, geoNetMaterial);
+            scene.add(geoNet);
 
-            // Bubbles
-            const bubbles = [];
-            const bubbleGeometry = new THREE.SphereGeometry(1, 64, 64);
-
-            const createBubble = () => {
-                const material = new THREE.MeshPhysicalMaterial({
-                    transmission: isDarkMode.value ? 0.7 : 0.2, 
-                    thickness: 1.0,         
-                    roughness: 0.1,         
-                    ior: 1.45,              
-                    iridescence: 1.0,       
-                    iridescenceIOR: 1.6,    
-                    sheen: 1.0,             
-                    transparent: true,
-                    opacity: isDarkMode.value ? 0.8 : 0.9, 
-                    color: isDarkMode.value ? 0x00b399 : 0x0284c7 
-                });
-                
-                const mesh = new THREE.Mesh(bubbleGeometry, material);
-                
-                const resetBubble = (b) => {
-                    b.position.set(
-                        (Math.random() - 0.5) * 50,
-                        -25,
-                        (Math.random() - 0.5) * 25
-                    );
-                    const s = Math.random() * 2.5 + 1.2; 
-                    b.scale.set(s, s, s);
-                    
-                    b.userData = {
-                        speed: Math.random() * 0.04 + 0.015,
-                        wobble: Math.random() * Math.PI * 2,
-                        popping: false
-                    };
-                    b.visible = true;
-                };
-
-                resetBubble(mesh);
-                scene.add(mesh);
-                return { mesh, reset: () => resetBubble(mesh) };
-            };
-
-            const popParticles = [];
-            const pop = (bubbleMesh) => {
-                const count = bubbleMesh.geometry.attributes.position.count;
-                const positions = bubbleMesh.geometry.attributes.position.array;
-                
-                const particleGeom = new THREE.BufferGeometry();
-                const particlePositions = new Float32Array(count * 3);
-                const velocities = new Float32Array(count * 3);
-                
-                const bubblePos = bubbleMesh.position.clone();
-                const bubbleScale = bubbleMesh.scale.x;
-
-                for (let i = 0; i < count; i++) {
-                    const x = positions[i * 3];
-                    const y = positions[i * 3 + 1];
-                    const z = positions[i * 3 + 2];
-                    
-                    // Initial position
-                    particlePositions[i * 3] = x * bubbleScale + bubblePos.x;
-                    particlePositions[i * 3 + 1] = y * bubbleScale + bubblePos.y;
-                    particlePositions[i * 3 + 2] = z * bubbleScale + bubblePos.z;
-                    
-                    // Velocity outwards
-                    velocities[i * 3] = x * (Math.random() * 0.1 + 0.05);
-                    velocities[i * 3 + 1] = y * (Math.random() * 0.1 + 0.05);
-                    velocities[i * 3 + 2] = z * (Math.random() * 0.1 + 0.05);
-                }
-                
-                particleGeom.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-                
-                const particleMat = new THREE.PointsMaterial({ 
-                    size: 0.04, 
-                    color: isDarkMode.value ? 0x00b399 : 0x38bdf8,
-                    transparent: true,
-                    opacity: 0.7,
-                    blending: isDarkMode.value ? THREE.AdditiveBlending : THREE.NormalBlending
-                });
-                
-                const particles = new THREE.Points(particleGeom, particleMat);
-                scene.add(particles);
-                
-                popParticles.push({
-                    mesh: particles,
-                    velocities: velocities,
-                    life: 1.0,
-                    geom: particleGeom,
-                    mat: particleMat
-                });
-            };
-
-            for (let i = 0; i < 35; i++) { // Increased bubble count
-                bubbles.push(createBubble());
-            }
-
-            // Mouse interaction
-            const mouse = new THREE.Vector2();
-            window.addEventListener('mousemove', (e) => {
-                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            // --- 5. 核心：紮實深色泡泡材質 (強化立體邊緣) ---
+            const bubbleGeometry = new THREE.SphereGeometry(1, 24, 24); // 增加細度讓邊緣更圓滑
+            const bubbleMaterial = new THREE.MeshPhysicalMaterial({
+                color: isDarkMode.value ? 0x044e3a : 0x0284c7,
+                transmission: 0.4,   // 降低透光度，讓顏色變濃郁
+                opacity: isDarkMode.value ? 0.95 : 0.85, 
+                transparent: true,
+                roughness: 0.05,
+                thickness: 2.0,      // 增加厚度感
+                ior: 1.5,
+                sheen: 1.0,          // 增加表面光澤
+                sheenColor: 0xffffff,
+                specularIntensity: 1.0,
+                depthWrite: false,
             });
 
-            camera.position.z = 15;
+            const bubbles = [];
+            const resetBubble = (mesh) => {
+                mesh.position.set(
+                    (Math.random() - 0.5) * spreadX,
+                    -45 - Math.random() * 40,
+                    (Math.random() - 0.5) * 25
+                );
+                const s = Math.random() * (isMobile ? 1.2 : 1.8) + 0.4;
+                mesh.scale.set(s, s, s);
+                mesh.userData = { speed: Math.random() * 0.07 + 0.02, wobble: Math.random() * Math.PI * 2, popping: false };
+                mesh.visible = true;
+            };
+
+            for (let i = 0; i < MAX_BUBBLES; i++) {
+                const mesh = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
+                resetBubble(mesh);
+                scene.add(mesh);
+                bubbles.push(mesh);
+            }
+
+            // --- 6. 破裂特效 ---
+            const popParticles = [];
+            const pop = (pos, color) => {
+                const pCount = 18;
+                const pGeom = new THREE.BufferGeometry();
+                const pPos = new Float32Array(pCount * 3);
+                const pVelo = [];
+                for (let i = 0; i < pCount; i++) {
+                    pPos[i*3]=pos.x; pPos[i*3+1]=pos.y; pPos[i*3+2]=pos.z;
+                    pVelo.push({ x:(Math.random()-0.5)*0.4, y:(Math.random()-0.5)*0.4, z:(Math.random()-0.5)*0.4 });
+                }
+                pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+                const pMat = new THREE.PointsMaterial({ size: 0.1, color: color, transparent: true, opacity: 0.9 });
+                const points = new THREE.Points(pGeom, pMat);
+                scene.add(points);
+                popParticles.push({ points, pVelo, life: 1.0 });
+            };
+
+            // --- 7. 動畫與平滑模式切換 ---
+            camera.position.z = 45;
 
             const animate = () => {
                 requestAnimationFrame(animate);
-                
-                // Update theme properties (only on change would be better, but keeping it here for simplicity with a check)
-                const targetAmbient = isDarkMode.value ? 0.3 : 1.2;
-                const targetPoint = isDarkMode.value ? 0.8 : 2.5;
-                const targetStarOpacity = isDarkMode.value ? 0.8 : 0.6;
-                const targetStarColor = isDarkMode.value ? 0xffffff : 0x475569;
-                
-                if (ambientLight.intensity !== targetAmbient) {
-                    ambientLight.intensity = targetAmbient;
-                    pointLight.intensity = targetPoint;
-                    starMaterial.opacity = targetStarOpacity;
-                    starMaterial.color.setHex(targetStarColor);
-                    starMaterial.blending = isDarkMode.value ? THREE.AdditiveBlending : THREE.NormalBlending;
-                    starMaterial.needsUpdate = true;
-                }
-                
-                stars.rotation.y += 0.00015;
-                stars.rotation.x += 0.00008;
-                
-                bubbles.forEach(b => {
-                    const targetBubbleOpacity = isDarkMode.value ? 0.8 : 0.9;
-                    const targetBubbleColor = isDarkMode.value ? 0x00b399 : 0x0284c7;
-                    const targetTransmission = isDarkMode.value ? 0.7 : 0.2;
 
-                    if (b.mesh.material.opacity !== targetBubbleOpacity) {
-                        b.mesh.material.opacity = targetBubbleOpacity;
-                        b.mesh.material.color.setHex(targetBubbleColor);
-                        b.mesh.material.transmission = targetTransmission;
-                    }
+                const isDark = isDarkMode.value;
+                const targetStarOpacity = isDark ? 0.8 : 0;
+                const targetBubbleColor = isDark ? 0x044e3a : 0x0284c7; // 更紮實的顏色
+                const targetBubbleOpacity = isDark ? 0.95 : 0.85;
+                const targetNetOpacity = isDark ? 0.2 : 0.05;
+                const targetLightInt = isDark ? 0.6 : 1.2;
+
+                // 星空與網格過渡
+                starMaterial.opacity += (targetStarOpacity - starMaterial.opacity) * 0.05;
+                stars.rotation.y += 0.0001;
+                geoNetMaterial.opacity += (targetNetOpacity - geoNetMaterial.opacity) * 0.05;
+                geoNetMaterial.color.lerp(new THREE.Color(isDark ? 0x044e3a : 0xaaaaaa), 0.05);
+                geoNet.rotation.y += 0.0005;
+
+                // 泡泡材質過渡
+                bubbleMaterial.color.lerp(new THREE.Color(targetBubbleColor), 0.05);
+                bubbleMaterial.opacity += (targetBubbleOpacity - bubbleMaterial.opacity) * 0.05;
+                ambientLight.intensity += (targetLightInt - ambientLight.intensity) * 0.05;
+
+                // 泡泡運動
+                bubbles.forEach(mesh => {
+                    if (mesh.userData.popping) return;
+                    mesh.position.y += mesh.userData.speed;
+                    mesh.position.x += Math.sin(Date.now() * 0.001 + mesh.userData.wobble) * 0.02;
                     
-                    if (b.mesh.userData.popping) return;
-
-                    b.mesh.position.y += b.mesh.userData.speed;
-                    b.mesh.position.x += Math.sin(Date.now() * 0.001 + b.mesh.userData.wobble) * 0.01;
-                    b.mesh.rotation.x += 0.01;
-
-                    // Pop logic
-                    if (b.mesh.position.y > 20 || (Math.random() > 0.998 && b.mesh.position.y > 0)) {
-                        b.mesh.userData.popping = true;
-                        gsap.to(b.mesh.scale, {
-                            x: b.mesh.scale.x * 1.3,
-                            y: b.mesh.scale.y * 1.3,
-                            z: b.mesh.scale.z * 1.3,
-                            duration: 0.1,
-                            onComplete: () => {
-                                pop(b.mesh);
-                                b.mesh.visible = false;
-                                setTimeout(() => {
-                                    b.reset();
-                                }, 800 + Math.random() * 1000);
-                            }
-                        });
+                    if (mesh.position.y > 35) {
+                        mesh.userData.popping = true;
+                        pop(mesh.position, bubbleMaterial.color);
+                        mesh.visible = false;
+                        setTimeout(() => resetBubble(mesh), 500 + Math.random() * 1500);
                     }
                 });
 
-                // Update pop particles
+                // 粒子邏輯
                 for (let i = popParticles.length - 1; i >= 0; i--) {
                     const p = popParticles[i];
-                    p.life -= 0.02;
+                    p.life -= 0.04;
+                    const posArr = p.points.geometry.attributes.position;
+                    for (let j = 0; j < p.pVelo.length; j++) {
+                        posArr.array[j*3] += p.pVelo[j].x;
+                        posArr.array[j*3+1] += p.pVelo[j].y;
+                        posArr.array[j*3+2] += p.pVelo[j].z;
+                    }
+                    posArr.needsUpdate = true;
+                    p.points.material.opacity = p.life;
                     if (p.life <= 0) {
-                        scene.remove(p.mesh);
-                        p.geom.dispose();
-                        p.mat.dispose();
+                        scene.remove(p.points);
+                        p.points.geometry.dispose();
+                        p.points.material.dispose();
                         popParticles.splice(i, 1);
-                        continue;
                     }
-
-                    const posAttr = p.geom.getAttribute('position');
-                    for (let j = 0; j < posAttr.count; j++) {
-                        posAttr.setX(j, posAttr.getX(j) + p.velocities[j * 3]);
-                        posAttr.setY(j, posAttr.getY(j) + p.velocities[j * 3 + 1]);
-                        posAttr.setZ(j, posAttr.getZ(j) + p.velocities[j * 3 + 2]);
-                    }
-                    posAttr.needsUpdate = true;
-                    p.mat.opacity = p.life * 0.6;
                 }
 
-                scene.rotation.y += (mouse.x * 0.05 - scene.rotation.y) * 0.05;
-                scene.rotation.x += (-mouse.y * 0.05 - scene.rotation.x) * 0.05;
-                
                 renderer.render(scene, camera);
             };
 
@@ -673,6 +604,7 @@ createApp({
 
         return {
             isDarkMode,
+            isMenuOpen,
             toggleDarkMode,
             currentStep,
             selectedCountry,

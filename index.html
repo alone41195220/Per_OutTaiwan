@@ -9,21 +9,56 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Global Error:", message, "at", source, ":", lineno, ":", colno);
+            if (error) console.error(error);
+            return false;
+        };
+    </script>
 </head>
 <body>
     <div class="app-bg"></div>
     <canvas id="three-canvas" class="three-canvas"></canvas>
 
-    <div id="app" class="relative z-10 min-h-screen py-8 px-4 md:px-8">
-        <!-- Theme Toggle -->
-        <button @click="toggleDarkMode" 
-                class="fixed top-6 right-6 w-12 h-12 rounded-2xl flex items-center justify-center transition-all z-[100] glass-card hover:scale-110 active:scale-95 shadow-lg group">
-            <span v-if="isDarkMode" class="text-2xl">☀️</span>
-            <span v-else class="text-2xl">🌙</span>
-            <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {{ isDarkMode ? '切換亮色模式' : '切換深色模式' }}
-            </span>
-        </button>
+    <div id="app" v-cloak class="relative z-10 min-h-screen py-8 px-4 md:px-8">
+        <!-- Collapsible Floating Menu -->
+        <div class="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-[100]">
+            <!-- Menu Items (Collapsible) -->
+            <div v-if="isMenuOpen" class="flex flex-col gap-3 mb-1 animate-slide-up">
+                <!-- Theme Toggle -->
+                <button @click="toggleDarkMode" 
+                        class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
+                    <span v-if="isDarkMode" class="text-2xl">☀️</span>
+                    <span v-else class="text-2xl">🌙</span>
+                    <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        {{ isDarkMode ? '切換亮色模式' : '切換深色模式' }}
+                    </span>
+                </button>
+
+                <!-- Home Button -->
+                <button @click="goHome" 
+                        class="w-14 h-14 bg-white text-slate-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border border-slate-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 group-hover:text-emerald-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        回首頁
+                    </span>
+                </button>
+            </div>
+
+            <!-- Main Menu Toggle Button -->
+            <button @click="isMenuOpen = !isMenuOpen" 
+                    class="w-16 h-16 bg-emerald-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white/30">
+                <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
 
         <!-- Flying Bird -->
         <div class="flying-bird" v-if="birdActive" :style="birdStyle">
@@ -78,54 +113,73 @@
         <!-- Step 3: Packing List -->
         <div v-if="currentStep === 3" class="max-w-5xl mx-auto">
             <!-- Header & Progress -->
-            <div class="glass-card p-6 rounded-3xl shadow-lg mb-8 sticky top-4 z-10">
-                <!-- Announcement Banner -->
+            <div class="glass-card p-4 md:p-6 rounded-3xl shadow-lg mb-8 sticky top-0 z-50 -mx-4 px-6 pt-10 md:mx-0 md:px-6 md:pt-6 md:top-4">
+                <!-- Announcement Banner (Always Visible) -->
                 <div v-if="announcementConfig.countries && announcementConfig.countries[selectedCountry] && announcementConfig.countries[selectedCountry].show" 
-                     class="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 animate-pulse">
-                    <span class="text-xl">📢</span>
-                    <p class="text-emerald-800 font-bold text-sm sm:text-base">
-                        {{ announcementConfig.countries[selectedCountry].message }}
-                    </p>
-                </div>
-
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-slate-800 flex items-center">
-                            <span class="mr-2">{{ countries[selectedCountry].flag }}</span>
-                            {{ countries[selectedCountry].name }} 旅遊清單
-                            <span class="ml-3 text-sm font-normal bg-slate-200 px-3 py-1 rounded-full text-slate-600">
-                                {{ selectedGender === 'male' ? '👨 男性' : '👩 女性' }}
-                            </span>
-                        </h1>
+                     class="mb-4 py-2 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center overflow-hidden">
+                    <div class="px-3 bg-emerald-50 z-10 flex items-center border-r border-emerald-100">
+                        <span class="text-lg">📢</span>
                     </div>
-                    <div class="flex gap-2">
-                        <button @click="markAllPacked" class="btn-primary">
-                            全部完成
-                        </button>
-                        <button @click="resetList" class="btn-secondary">
-                            重置清單
-                        </button>
+                    <div class="marquee-container flex-1">
+                        <p class="marquee-content text-emerald-800 font-bold text-xs sm:text-base">
+                            {{ announcementConfig.countries[selectedCountry].message }}
+                            <span class="inline-block w-20"></span>
+                            {{ announcementConfig.countries[selectedCountry].message }}
+                        </p>
                     </div>
                 </div>
 
-                <!-- Progress Bar -->
-                <div class="mb-4">
-                    <div class="flex justify-between text-sm font-medium text-slate-600 mb-2">
-                        <span>打包進度 (Packing Progress)</span>
-                        <span>{{ packedCount }} / {{ totalCount }} 項目</span>
-                    </div>
-                    <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                        <div class="progress-bar-fill h-full bg-emerald-500" :style="{ width: progressPercent + '%' }"></div>
-                    </div>
+                <!-- Title & Mobile Toggle -->
+                <div class="flex items-center justify-between mb-2 md:mb-6">
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-800 flex items-center">
+                        <span class="mr-2">{{ countries[selectedCountry].flag }}</span>
+                        <span class="truncate max-w-[150px] sm:max-w-none">{{ countries[selectedCountry].name }} 清單</span>
+                        <span class="ml-2 text-[10px] md:text-sm font-normal bg-slate-200 px-2 py-0.5 rounded-full text-slate-600 whitespace-nowrap">
+                            {{ selectedGender === 'male' ? '👨' : '👩' }}
+                        </span>
+                    </h1>
+                    
+                    <!-- Mobile Toggle Button -->
+                    <button @click="isHeaderExpanded = !isHeaderExpanded" 
+                            class="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transition-transform" :class="{ 'rotate-180': isHeaderExpanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
                 </div>
 
-                <!-- Search -->
-                <div class="relative">
-                    <input v-model="searchQuery" type="text" placeholder="搜尋物品... (例如：襪子)" 
-                           class="search-input">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                <!-- Collapsible Content (Always visible on MD+) -->
+                <div :class="{ 'hidden': !isHeaderExpanded && currentStep === 3 }" class="md:block animate-fade-in">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-end mb-6 gap-4">
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <button @click="markAllPacked" class="btn-primary flex-1 md:flex-none py-2 text-sm">
+                                全部完成
+                            </button>
+                            <button @click="resetList" class="btn-secondary flex-1 md:flex-none py-2 text-sm">
+                                重置清單
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-[10px] md:text-sm font-medium text-slate-600 mb-1">
+                            <span>打包進度</span>
+                            <span>{{ packedCount }} / {{ totalCount }}</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2 md:h-3 overflow-hidden">
+                            <div class="progress-bar-fill h-full bg-emerald-500" :style="{ width: progressPercent + '%' }"></div>
+                        </div>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="relative">
+                        <input v-model="searchQuery" type="text" placeholder="搜尋物品..." 
+                               class="search-input py-2 pl-10 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
                 </div>
             </div>
 
@@ -184,20 +238,10 @@
         </div>
 
         <!-- Footer -->
-        <footer class="mt-20 text-center text-slate-400 text-sm">
+        <footer class="mt-20 pb-24 text-center text-slate-400 text-sm">
             <p>© 2026 Elon提醒出國玩記得注意荷包 ✈️</p>
         </footer>
 
-        <!-- Floating Home Button -->
-        <button v-if="currentStep > 1" @click="goHome" 
-                class="fixed bottom-8 right-8 w-14 h-14 bg-white text-slate-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group border border-slate-100">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 group-hover:text-emerald-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                回首頁
-            </span>
-        </button>
 
         <!-- Custom Confirm Modal -->
         <div v-if="showResetConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4">

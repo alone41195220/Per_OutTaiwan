@@ -1,0 +1,5 @@
+{
+  "name": "互動式旅遊打包提醒網站 (Travel Packing Reminder)",
+  "description": "一個幫助使用者在出國前確認需要帶哪些物品的互動式網站，具備現代化 UI、互動動畫與 RWD 設計。",
+  "requestFramePermissions": []
+}

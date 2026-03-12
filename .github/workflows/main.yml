@@ -3,7 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - V1.0.1  # 或是您的主分支名稱，例如 master
+      - V1.0.1
+  workflow_dispatch:
 
 permissions:
   contents: write

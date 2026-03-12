@@ -1,0 +1,24 @@
+{
+  "countries": {
+    "korea": {
+      "show": true,
+      "message": "感謝2026/3/20本次韓國旅遊費用, 由楊仁寶贊助"
+    },
+    "japan": {
+      "show": false,
+      "message": "日本旅遊公告：請記得攜帶 JR Pass 與網卡。"
+    },
+    "thailand": {
+      "show": false,
+      "message": "泰國旅遊公告：請注意防曬與補水。"
+    },
+    "usa": {
+      "show": false,
+      "message": "美國旅遊公告：請確認美簽 (ESTA) 是否有效。"
+    },
+    "europe": {
+      "show": false,
+      "message": "歐洲旅遊公告：請注意各國插座規格差異。"
+    }
+  }
+}

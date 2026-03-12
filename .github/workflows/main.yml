@@ -24,4 +24,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist # Vite 編譯後的資料夾
-          branch: gh-pages # 部署到的分支
+          branch: gh-pagesTest # 部署到的分支

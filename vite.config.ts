@@ -12,13 +12,11 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        // 1. 關鍵修正：解決 "Rollup failed to resolve import 'vue'"
-        // 強制 Vite 指向包含 compiler 的完整版 ESM 模組
         'vue': 'vue/dist/vue.esm-bundler.js',
         
         // 2. 修正別名路徑：通常指向 src 或是專案根目錄
         // 建議確保這裡與你 tsconfig.json 的 paths 一致
-        '@': path.resolve(__dirname, './src'), 
+        '@': path.resolve(__dirname, './'), 
       },
     },
     server: {

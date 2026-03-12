@@ -200,166 +200,161 @@ export function createParticles(x, y, color) {
     }
 }
 
-// Layout Vue App
-if (!Vue || !THREE || !gsap) {
-    console.error('Missing dependencies: Vue, THREE, or gsap is not loaded.');
-} else {
-    const { createApp, ref, onMounted, defineComponent, watch } = Vue;
+const { createApp, ref, onMounted, defineComponent, watch } = Vue;
 
-    // Define Layout Component
-    const LayoutComponent = defineComponent({
-        name: 'LayoutComponent',
-        props: {
-            title: {
-                type: String,
-                default: 'OutTaiwan'
-            }
-        },
-        template: `
-            <div class="app-bg"></div>
-            <canvas id="three-canvas" class="three-canvas"></canvas>
+// Define Layout Component
+const LayoutComponent = defineComponent({
+    name: 'LayoutComponent',
+    props: {
+        title: {
+            type: String,
+            default: 'OutTaiwan'
+        }
+    },
+    template: `
+        <div class="app-bg"></div>
+        <canvas id="three-canvas" class="three-canvas"></canvas>
 
-            <div id="app" v-cloak class="relative z-10 min-h-screen py-8 px-4 md:px-8">
-                <!-- Collapsible Floating Menu -->
-                <div class="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-[100]">
-                    <!-- Menu Items (Collapsible) -->
-                    <div v-if="isMenuOpen" class="flex flex-col gap-3 mb-1 animate-slide-up">
-                        <!-- Theme Toggle -->
-                        <button @click="toggleDarkMode" 
-                                class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
-                            <span v-if="isDarkMode" class="text-2xl">☀️</span>
-                            <span v-else class="text-2xl">🌙</span>
-                            <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                                {{ isDarkMode ? '切換亮色模式' : '切換深色模式' }}
-                            </span>
-                        </button>
-                    </div>
-
-                    <!-- Main Menu Toggle Button -->
-                    <button @click="isMenuOpen = !isMenuOpen" 
-                            class="w-16 h-16 bg-emerald-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white/30">
-                        <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+        <div id="app" v-cloak class="relative z-10 min-h-screen py-8 px-4 md:px-8">
+            <!-- Collapsible Floating Menu -->
+            <div class="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-[100]">
+                <!-- Menu Items (Collapsible) -->
+                <div v-if="isMenuOpen" class="flex flex-col gap-3 mb-1 animate-slide-up">
+                    <!-- Theme Toggle -->
+                    <button @click="toggleDarkMode" 
+                            class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
+                        <span v-if="isDarkMode" class="text-2xl">☀️</span>
+                        <span v-else class="text-2xl">🌙</span>
+                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            {{ isDarkMode ? '切換亮色模式' : '切換深色模式' }}
+                        </span>
                     </button>
                 </div>
 
-                <!-- Flying Bird -->
-                <div class="flying-bird" v-if="birdActive" :style="birdStyle">
-                    <span class="bird-emoji">🕊️</span>
-                </div>
-
-                <!-- Running Dog -->
-                <div class="running-dog" v-if="dogActive" :style="dogStyle">
-                    <span class="dog-emoji">🐕</span>
-                    <div class="dog-dust"></div>
-                </div>
-
-            <!-- Content Area -->
-                <div id="content-area">
-                    <slot></slot>
-                </div>
+                <!-- Main Menu Toggle Button -->
+                <button @click="isMenuOpen = !isMenuOpen" 
+                        class="w-16 h-16 bg-emerald-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 border-white/30">
+                    <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
-            <!-- Footer -->
-            <footer class="mt-20 pb-24 text-center text-slate-400 text-sm">
-                <p>© 2026 Elon提醒出國玩記得注意荷包 ✈️</p>
-            </footer>
-        `,
-        setup(props) {
-            const isDarkMode = ref(false);
-            const isMenuOpen = ref(false);
-            const dogActive = ref(false);
-            const birdActive = ref(false);
-            const peekingActive = ref(false);
+            <!-- Flying Bird -->
+            <div class="flying-bird" v-if="birdActive" :style="birdStyle">
+                <span class="bird-emoji">🕊️</span>
+            </div>
+
+            <!-- Running Dog -->
+            <div class="running-dog" v-if="dogActive" :style="dogStyle">
+                <span class="dog-emoji">🐕</span>
+                <div class="dog-dust"></div>
+            </div>
+
+        <!-- Content Area -->
+            <div id="content-area">
+                <slot></slot>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-20 pb-24 text-center text-slate-400 text-sm">
+            <p>© 2026 Elon提醒出國玩記得注意荷包 ✈️</p>
+        </footer>
+    `,
+    setup(props) {
+        const isDarkMode = ref(false);
+        const isMenuOpen = ref(false);
+        const dogActive = ref(false);
+        const birdActive = ref(false);
+        const peekingActive = ref(false);
+        
+        const dogStyle = ref({
+            left: '-100px',
+            transform: 'scaleX(1)'
+        });
+
+        const birdStyle = ref({
+            left: '-100px',
+            transform: 'scaleX(1)'
+        });
+
+        const triggerAnimal = (activeState, styleObject, offset, baseDuration) => {
+            if (activeState.value) return;
+
+            const fromLeft = Math.random() > 0.5;
+            const screenWidth = window.innerWidth;
             
-            const dogStyle = ref({
-                left: '-100px',
-                transform: 'scaleX(1)'
-            });
+            styleObject.left = fromLeft ? `-${offset}px` : `${screenWidth + offset}px`;
+            styleObject.transform = fromLeft ? 'scaleX(-1)' : 'scaleX(1)';
+            activeState.value = true;
 
-            const birdStyle = ref({
-                left: '-100px',
-                transform: 'scaleX(1)'
-            });
-
-            const triggerAnimal = (activeState, styleObject, offset, baseDuration) => {
-                if (activeState.value) return;
-
-                const fromLeft = Math.random() > 0.5;
-                const screenWidth = window.innerWidth;
-                
-                styleObject.left = fromLeft ? `-${offset}px` : `${screenWidth + offset}px`;
-                styleObject.transform = fromLeft ? 'scaleX(-1)' : 'scaleX(1)';
-                activeState.value = true;
-
-                gsap.to(styleObject, {
-                    left: fromLeft ? `${screenWidth + offset}px` : `-${offset}px`,
-                    duration: baseDuration + Math.random() * 2, 
-                    ease: "power1.inOut",
-                    onComplete: () => {
-                        activeState.value = false;
-                    }
-                });
-            };
-
-            const triggerDog = () => triggerAnimal(dogActive, dogStyle, 150, 7.5);
-            const triggerBird = () => triggerAnimal(birdActive, birdStyle, 100, 15);
-
-            const triggerPeek = () => {
-                peekingActive.value = true;
-                setTimeout(() => {
-                    peekingActive.value = false;
-                }, 2500);
-            };
-
-            // Randomly trigger animals
-            setInterval(() => {
-                if (Math.random() > 0.4) triggerDog();
-                if (Math.random() > 0.5) triggerBird();
-                if (Math.random() > 0.7) triggerPeek();
-            }, 2000);
-
-            const toggleDarkMode = () => {
-                isDarkMode.value = !isDarkMode.value;
-                document.body.classList.toggle('dark', isDarkMode.value);
-                localStorage.setItem('darkMode', isDarkMode.value ? 'true' : 'false');
-            };
-
-            // Update document title when title prop changes
-            onMounted(() => {
-                document.title = props.title;
-                // Initialize Three.js background
-                initThreeBackground();
-                
-                // Load dark mode preference
-                const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-                isDarkMode.value = savedDarkMode;
-                if (savedDarkMode) {
-                    document.body.classList.add('dark');
+            gsap.to(styleObject, {
+                left: fromLeft ? `${screenWidth + offset}px` : `-${offset}px`,
+                duration: baseDuration + Math.random() * 2, 
+                ease: "power1.inOut",
+                onComplete: () => {
+                    activeState.value = false;
                 }
             });
+        };
+
+        const triggerDog = () => triggerAnimal(dogActive, dogStyle, 150, 7.5);
+        const triggerBird = () => triggerAnimal(birdActive, birdStyle, 100, 15);
+
+        const triggerPeek = () => {
+            peekingActive.value = true;
+            setTimeout(() => {
+                peekingActive.value = false;
+            }, 2500);
+        };
+
+        // Randomly trigger animals
+        setInterval(() => {
+            if (Math.random() > 0.4) triggerDog();
+            if (Math.random() > 0.5) triggerBird();
+            if (Math.random() > 0.7) triggerPeek();
+        }, 2000);
+
+        const toggleDarkMode = () => {
+            isDarkMode.value = !isDarkMode.value;
+            document.body.classList.toggle('dark', isDarkMode.value);
+            localStorage.setItem('darkMode', isDarkMode.value ? 'true' : 'false');
+        };
+
+        // Update document title when title prop changes
+        onMounted(() => {
+            document.title = props.title;
+            // Initialize Three.js background
+            initThreeBackground();
             
-            watch(() => props.title, (newTitle) => {
-                document.title = newTitle;
-            });
+            // Load dark mode preference
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            isDarkMode.value = savedDarkMode;
+            if (savedDarkMode) {
+                document.body.classList.add('dark');
+            }
+        });
+        
+        watch(() => props.title, (newTitle) => {
+            document.title = newTitle;
+        });
 
-            return {
-                isDarkMode,
-                isMenuOpen,
-                dogActive,
-                birdActive,
-                peekingActive,
-                dogStyle,
-                birdStyle,
-                toggleDarkMode
-            };
-        }
-    });
+        return {
+            isDarkMode,
+            isMenuOpen,
+            dogActive,
+            birdActive,
+            peekingActive,
+            dogStyle,
+            birdStyle,
+            toggleDarkMode
+        };
+    }
+});
 
-    // Export Layout Component
-    export { LayoutComponent };
-}
+// Export Layout Component
+export { LayoutComponent };

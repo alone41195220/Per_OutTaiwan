@@ -19,9 +19,9 @@ const Turntable = defineComponent({
     const containerRef = ref<HTMLElement | null>(null);
     const isSpinning = ref(false);
     const prizes = ref<Prize[]>([
-      { text: '阿寶Pay 100萬', color: '#fbbf24', level: 1 },
-      { text: '阿寶Pay 10萬', color: '#94a3b8', level: 2 },
-      { text: '阿寶Pay 1萬', color: '#d97706', level: 3 },
+      { text: '100萬', color: '#fbbf24', level: 1 },
+      { text: '10萬', color: '#94a3b8', level: 2 },
+      { text: '1萬', color: '#d97706', level: 3 },
       { text: '銘謝惠顧', color: '#f1f5f9', level: 0 },
       { text: '銘謝惠顧', color: '#e2e8f0', level: 0 },
       { text: '銘謝惠顧', color: '#cbd5e1', level: 0 },

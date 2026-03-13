@@ -1,4 +1,4 @@
-import{c as e,d as s,L as l,a}from"./index-DHhv7soH.js";const o=s({name:"Home",components:{LayoutComponent:l},setup(){return{goToPackingList:t=>{a(t.clientX,t.clientY,"#10b981"),window.location.href="TakeList.html"}}},template:`
+import{c as e,d as s,L as l,a}from"./index-COxtbxWP.js";const o=s({name:"Home",components:{LayoutComponent:l},setup(){return{goToPackingList:t=>{a(t.clientX,t.clientY,"#10b981"),window.location.href="TakeList.html"}}},template:`
     <LayoutComponent title="OutTaiwan 功能選單">
       <!-- 首頁功能列表 -->
       <div class="max-w-6xl mx-auto">

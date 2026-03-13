@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => {
     // 3. 額外保險：確保 Rollup 知道如何處理 vue
     build: {
       rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          takeList: path.resolve(__dirname, 'TakeList.html'),
+        },
         external: [], // 確保 vue 沒有被意外排除
       }
     }

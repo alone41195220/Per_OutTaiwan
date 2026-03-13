@@ -1,13 +1,16 @@
-import { defineComponent, ref } from 'vue';
-import { LayoutComponent } from '../Layout/Layout';
+import { createApp, defineComponent, ref } from 'vue';
+import { LayoutComponent, createParticles } from '../Layout/Layout';
+import '../../css/index.css';
 
-export default defineComponent({
-  name: 'Index',
+const Home = defineComponent({
+  name: 'Home',
   components: {
     LayoutComponent
   },
   setup() {
-    const goToPackingList = () => {
+    const goToPackingList = (event: MouseEvent) => {
+      createParticles(event.clientX, event.clientY, '#10b981');
+
       window.location.href = 'TakeList.html';
     };
 
@@ -19,7 +22,7 @@ export default defineComponent({
     <LayoutComponent title="OutTaiwan 功能選單">
       <!-- 首頁功能列表 -->
       <div class="max-w-6xl mx-auto">
-        <h1 class="text-4xl md:text-5xl font-bold text-center mb-4 text-slate-800">OutTaiwan 功能選單</h1>
+        <h1 class="text-4xl md:text-5xl font-bold text-center mb-4 text-slate-800">Elon Tools😀</h1>
         <p class="text-center text-slate-600 mb-12">選擇您需要的功能</p>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -63,3 +66,5 @@ export default defineComponent({
     </LayoutComponent>
   `
 });
+
+createApp(Home).mount('#app');

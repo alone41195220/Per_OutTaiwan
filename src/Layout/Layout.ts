@@ -2,9 +2,12 @@ import { defineComponent, ref, onMounted, onUnmounted, watch } from 'vue';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
-export function initThreeBackground() {
+export function initThreeBackground(isDarkMode = false) {
     const canvas = document.getElementById('three-canvas');
     if (!canvas) return;
+
+    // 建立一個內部狀態供 animate 讀取，避免重複初始化
+    const state = { isDark: isDarkMode };
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -12,19 +15,23 @@ export function initThreeBackground() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // --- 1. 響應式配置 (調整手機版數量以確保效能) ---
+    // --- 響應式配置 ---
     const isMobile = window.innerWidth < 768;
     const MAX_BUBBLES = isMobile ? 80 : 180;
     const spreadX = isMobile ? 40 : 80;
 
-    // --- 2. 燈光系統 ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // ==========================================
+    // --- 1. 背景 A: 燈光系統 ---
+    // ==========================================
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 1.0);
+    const pointLight = new THREE.PointLight(0xffffff, 1.2);
     pointLight.position.set(20, 30, 20);
     scene.add(pointLight);
 
-    // --- 3. 背景 A: 星空 (優化深度感與閃爍感) ---
+    // ==========================================
+    // --- 2. 背景 B: 星空 ---
+    // ==========================================
     const starCount = 6000;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
@@ -35,51 +42,43 @@ export function initThreeBackground() {
     }
     starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     const starMaterial = new THREE.PointsMaterial({
-        size: 0.18,
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.9,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        sizeAttenuation: true
+        size: 0.18, color: 0xffffff, transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
     });
     const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
 
-    // --- 4. 背景 B: 幾何網格 (淺色模式加深線條) ---
+    // ==========================================
+    // --- 3. 背景 C: 幾何網格 ---
+    // ==========================================
     const geoNetGeometry = new THREE.IcosahedronGeometry(80, 2);
     const geoNetMaterial = new THREE.MeshBasicMaterial({
-        color: 0x044e3a,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.25,
+        color: state.isDark ? 0x00f2ff : 0x044e3a, 
+        wireframe: true, 
+        transparent: true, 
+        opacity: 0.2,
+        side: THREE.DoubleSide // 關鍵：確保相機在內部也看得到網格
     });
     const geoNet = new THREE.Mesh(geoNetGeometry, geoNetMaterial);
     scene.add(geoNet);
 
-    // --- 5. 核心：泡泡材質 (保持紮實質感) ---
+    // ==========================================
+    // --- 4. 背景 D: 泡泡 ---
+    // ==========================================
     const bubbleGeometry = new THREE.SphereGeometry(1, 24, 24);
     const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x044e3a,
-        transmission: 0.3,
-        opacity: 0.95,
+        color: state.isDark ? 0x00f2ff : 0x044e3a, 
+        transmission: 0.5, 
+        opacity: 0.8, 
         transparent: true,
-        roughness: 0.05,
-        thickness: 2.5,
-        ior: 1.5,
-        sheen: 1.0,
-        sheenColor: 0xffffff,
-        specularIntensity: 1.2,
-        depthWrite: false,
+        roughness: 0.1, 
+        thickness: 2, 
+        depthWrite: false, // 關鍵：防止透明泡泡互相遮擋消失
     });
 
     const bubbles = [];
     const resetBubble = (mesh) => {
-        mesh.position.set(
-            (Math.random() - 0.5) * spreadX,
-            -50 - Math.random() * 50,
-            (Math.random() - 0.5) * 30
-        );
+        mesh.position.set((Math.random() - 0.5) * spreadX, -50 - Math.random() * 50, (Math.random() - 0.5) * 30);
         const s = Math.random() * (isMobile ? 1.0 : 1.8) + 0.5;
         mesh.scale.set(s, s, s);
         mesh.userData = { speed: Math.random() * 0.06 + 0.02, wobble: Math.random() * Math.PI * 2, popping: false };
@@ -93,55 +92,170 @@ export function initThreeBackground() {
         bubbles.push(mesh);
     }
 
-    // --- 6. 破裂特效 ---
     const popParticles = [];
     const pop = (pos, color) => {
-        const pCount = 15;
+        const pCount = 10;
         const pGeom = new THREE.BufferGeometry();
         const pPos = new Float32Array(pCount * 3);
         const pVelo = [];
         for (let i = 0; i < pCount; i++) {
             pPos[i * 3] = pos.x; pPos[i * 3 + 1] = pos.y; pPos[i * 3 + 2] = pos.z;
-            pVelo.push({ x: (Math.random() - 0.5) * 0.5, y: (Math.random() - 0.5) * 0.5, z: (Math.random() - 0.5) * 0.5 });
+            pVelo.push({ x: (Math.random() - 0.5) * 0.3, y: (Math.random() - 0.5) * 0.3, z: (Math.random() - 0.5) * 0.3 });
         }
         pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ size: 0.12, color: color, transparent: true, opacity: 1.0 });
+        const pMat = new THREE.PointsMaterial({ size: 0.1, color: color, transparent: true, opacity: 1.0 });
         const points = new THREE.Points(pGeom, pMat);
         scene.add(points);
         popParticles.push({ points, pVelo, life: 1.0 });
     };
 
-    // --- 7. 動畫 ---
-    camera.position.z = 50;
+    // ==========================================
+    // --- 5. 背景 E: 動態飛行生物 ---
+    // ==========================================
+    const creatures = [];
+    const creatureCount = isMobile ? 3 : 5;
 
+    const createBird = () => {
+        const bird = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffb703, flatShading: true });
+        const wingMat = new THREE.MeshStandardMaterial({ color: 0xfb8500, flatShading: true });
+
+        const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.5, 4), bodyMat);
+        body.rotation.x = Math.PI / 2;
+        bird.add(body);
+
+        const leftWingPivot = new THREE.Group();
+        leftWingPivot.position.set(-0.2, 0.1, 0);
+        const leftWing = new THREE.Mesh(new THREE.ConeGeometry(0.6, 2, 3), wingMat);
+        leftWing.position.set(-1, 0, 0);
+        leftWing.rotation.z = Math.PI / 2;
+        leftWingPivot.add(leftWing);
+        bird.add(leftWingPivot);
+
+        const rightWingPivot = new THREE.Group();
+        rightWingPivot.position.set(0.2, 0.1, 0);
+        const rightWing = new THREE.Mesh(new THREE.ConeGeometry(0.6, 2, 3), wingMat);
+        rightWing.position.set(1, 0, 0);
+        rightWing.rotation.z = -Math.PI / 2;
+        rightWingPivot.add(rightWing); 
+        bird.add(rightWingPivot);
+
+        // --- 調整處：將 flapSpeed 調小（原本是 0.003 + 0.004），使其揮動更慢 ---
+        bird.userData = { leftWingPivot, rightWingPivot, flapSpeed: Math.random() * 0.001 + 0.002 };
+        
+        // --- 調整處：體型放大 5% ---
+        bird.scale.set(1.05, 1.05, 1.05);
+        
+        return bird;
+    };
+
+    const createUFO = () => {
+        const ufo = new THREE.Group();
+        const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.2, 16), new THREE.MeshStandardMaterial({ color: 0x8ecae6, metalness: 0.8 }));
+        ufo.add(disc);
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, transparent: true }));
+        dome.position.y = 0.1;
+        ufo.add(dome);
+
+        // --- 調整處：體型放大 5% ---
+        ufo.scale.set(1.05, 1.05, 1.05);
+
+        return ufo;
+    };
+
+    for (let i = 0; i < creatureCount; i++) {
+        const wrapper = new THREE.Group();
+        const bird = createBird();
+        const ufo = createUFO();
+        wrapper.add(bird);
+        wrapper.add(ufo);
+
+        wrapper.userData = {
+            angle: Math.random() * Math.PI * 2,
+            radiusX: 40 + Math.random() * 40,
+            radiusZ: 20 + Math.random() * 20,
+            speed: 0.002 + Math.random() * 0.002,
+            baseY: (Math.random() - 0.5) * 40,
+            birdRef: bird,
+            ufoRef: ufo
+        };
+        scene.add(wrapper);
+        creatures.push(wrapper);
+    }
+
+    // ==========================================
+    // --- **開始Render()** ---
+    // ==========================================
+    camera.position.z = 50;
     const animate = () => {
         requestAnimationFrame(animate);
 
-        stars.rotation.y += 0.0001;
-        geoNet.rotation.y += 0.0006;
-        geoNet.rotation.z += 0.0003;
+        // 即時修正顏色邏輯，改為從 state 讀取
+        const activeColor = state.isDark ? 0x00f2ff : 0x044e3a; 
+        geoNetMaterial.color.setHex(activeColor);
+        bubbleMaterial.color.setHex(activeColor);
+        geoNetMaterial.opacity = state.isDark ? 0.1 : 0.2;
 
-        // 泡泡運動邏輯
+        stars.rotation.y += 0.0001;
+        geoNet.rotation.y += 0.0004;
+
+        // 飛行生物邏輯
+        creatures.forEach(wrapper => {
+            const data = wrapper.userData;
+            
+            // 1. 動態速度：俯衝加速，上升減速
+            const verticalMomentum = Math.cos(data.angle * 3) * 0.001; 
+            data.angle += (data.speed + verticalMomentum);
+
+            wrapper.position.x = Math.cos(data.angle) * data.radiusX;
+            wrapper.position.z = Math.sin(data.angle) * data.radiusZ;
+            
+            const time = Date.now() * 0.001;
+            const hover = Math.sin(data.angle * 3) * 5; 
+            const jitter = Math.sin(time + data.baseY) * 0.5; 
+            wrapper.position.y = data.baseY + hover + jitter;
+
+            // 2. 轉彎傾斜：讓飛行更生動
+            const bankAngle = Math.sin(data.angle) * 0.2; 
+            wrapper.rotation.z = bankAngle + (state.isDark ? Math.sin(time) * 0.15 : 0);
+            wrapper.rotation.y = -data.angle + Math.PI / 2;
+
+            data.birdRef.visible = !state.isDark;
+            data.ufoRef.visible = state.isDark;
+
+            if (!state.isDark) {
+                // 翅膀邏輯：使用變慢後的 flapSpeed
+                const flap = Math.sin(Date.now() * data.birdRef.userData.flapSpeed);
+                data.birdRef.userData.leftWingPivot.rotation.z = flap * 0.6;
+                data.birdRef.userData.rightWingPivot.rotation.z = -flap * 0.6;
+                data.birdRef.rotation.x = Math.sin(time * 5) * 0.05;
+            } else {
+                data.ufoRef.rotation.y += 0.1;
+                wrapper.position.x += Math.sin(time * 2) * 0.2;
+            }
+        });
+
+        // 泡泡運動
         bubbles.forEach(mesh => {
             if (mesh.userData.popping) return;
             mesh.position.y += mesh.userData.speed;
             mesh.position.x += Math.sin(Date.now() * 0.001 + mesh.userData.wobble) * 0.02;
 
-            if (mesh.position.y > 40) {
+            if (mesh.position.y > 45) {
                 mesh.userData.popping = true;
                 pop(mesh.position, bubbleMaterial.color);
                 mesh.visible = false;
                 setTimeout(() => {
                     mesh.userData.popping = false;
                     resetBubble(mesh);
-                }, 500 + Math.random() * 2000);
+                }, 1000 + Math.random() * 2000);
             }
         });
 
-        // 粒子消失邏輯
+        // 粒子邏輯
         for (let i = popParticles.length - 1; i >= 0; i--) {
             const p = popParticles[i];
-            p.life -= 0.03;
+            p.life -= 0.02;
             const posArr = p.points.geometry.attributes.position;
             for (let j = 0; j < p.pVelo.length; j++) {
                 posArr.array[j * 3] += p.pVelo[j].x;
@@ -168,6 +282,13 @@ export function initThreeBackground() {
     });
 
     animate();
+
+    // 回傳控制接口給外部 watch 使用
+    return {
+        updateTheme: (newVal) => {
+            state.isDark = newVal;
+        }
+    };
 }
 
 export function createParticles(x, y, color) {
@@ -274,11 +395,6 @@ const LayoutComponent = defineComponent({
                 </button>
             </div>
 
-            <!-- Flying Bird -->
-            <div class="flying-bird" v-if="birdActive" :style="birdStyle">
-                <span class="bird-emoji">🕊️</span>
-            </div>
-
             <!-- Running Dog -->
             <div class="running-dog" v-if="dogActive" :style="dogStyle">
                 <span class="dog-emoji">🐕</span>
@@ -313,27 +429,9 @@ const LayoutComponent = defineComponent({
         const peekingActive = ref(false);
         const globalAnnouncement = ref({ show: false, message: '' });
         
-        const dogStyle = ref({
-            left: '-100px',
-            transform: 'scaleX(1)'
-        });
-
-        const birdStyle = ref({
-            left: '-100px',
-            transform: 'scaleX(1)'
-        });
-
-        const peekStyle = ref({
-            top: 'auto',
-            bottom: 'auto',
-            left: 'auto',
-            right: 'auto',
-            transform: 'none',
-            opacity: 0,
-            x: 0,
-            y: 0
-        });
-
+        // ==========================================
+        // --- 小圖示設計 ---
+        // ==========================================
         const triggerAnimal = (activeState, styleObject, offset, baseDuration) => {
             if (activeState.value) return;
 
@@ -353,10 +451,21 @@ const LayoutComponent = defineComponent({
                 }
             });
         };
-
+        const dogStyle = ref({
+            left: '-100px',
+            transform: 'scaleX(1)'
+        });
+        const peekStyle = ref({
+            top: 'auto',
+            bottom: 'auto',
+            left: 'auto',
+            right: 'auto',
+            transform: 'none',
+            opacity: 0,
+            x: 0,
+            y: 0
+        });
         const triggerDog = () => triggerAnimal(dogActive, dogStyle, 150, 7.5);
-        const triggerBird = () => triggerAnimal(birdActive, birdStyle, 100, 15);
-
         const triggerPeek = () => {
             if (peekingActive.value) return;
 
@@ -486,24 +595,24 @@ const LayoutComponent = defineComponent({
             }
         };
 
-        // Randomly trigger animals - INCREASED FREQUENCY
         setInterval(() => {
             const rand = Math.random();
-            if (rand > 0.5) triggerPeek(); // 50% chance for peek/spotlight
-            else if (rand > 0.25) triggerDog();
-            else triggerBird();
-        }, 1500); // Trigger every 1.5s instead of 2s
+            if (rand > 0.5) triggerPeek();
+            if (rand > 0.25) triggerDog();
+        }, 1500);
 
+
+        // ==========================================
+        // --- Global Method ---
+        // ==========================================
         const toggleDarkMode = () => {
             isDarkMode.value = !isDarkMode.value;
             document.body.classList.toggle('dark', isDarkMode.value);
             localStorage.setItem('darkMode', isDarkMode.value ? 'true' : 'false');
         };
-
         const goToHome = () => {
-            window.location.href = 'index.html';
+            window.location.href = './';
         };
-
         const fetchGlobalAnnouncement = async () => {
             try {
                 const response = await fetch(`/announcements.json?t=${Date.now()}`);
@@ -516,35 +625,42 @@ const LayoutComponent = defineComponent({
                 console.error('Failed to fetch global announcement:', error);
             }
         };
-
-        // Global click effect
         const handleGlobalClick = (e: MouseEvent) => {
             createParticles(e.clientX, e.clientY, isDarkMode.value ? '#34d399' : '#10b981');
         };
 
-        // Update document title when title prop changes
+        // ==========================================
+        // --- Mounted ---
+        // ==========================================
+        let threeBg = null;
         onMounted(() => {
             document.title = props.title;
-            // Initialize Three.js background
-            initThreeBackground();
-            
-            // Load dark mode preference
+
+            threeBg = initThreeBackground(isDarkMode.value);
+
             const savedDarkMode = localStorage.getItem('darkMode') === 'true';
             isDarkMode.value = savedDarkMode;
-            if (savedDarkMode) {
-                document.body.classList.add('dark');
-            }
-
+            if (savedDarkMode)  document.body.classList.add('dark');
+        
             fetchGlobalAnnouncement();
             window.addEventListener('click', handleGlobalClick);
-        });
-        
-        watch(() => props.title, (newTitle) => {
-            document.title = newTitle;
         });
 
         onUnmounted(() => {
             window.removeEventListener('click', handleGlobalClick);
+        });
+        
+        // ==========================================
+        // --- Watchers ---
+        // ==========================================
+        watch(() => props.title, (newTitle) => {
+            document.title = newTitle;
+        });
+
+        watch(isDarkMode, (newVal) => {
+            if (threeBg) {
+                threeBg.updateTheme(newVal);
+            }
         });
 
         return {
@@ -554,7 +670,6 @@ const LayoutComponent = defineComponent({
             birdActive,
             peekingActive,
             dogStyle,
-            birdStyle,
             peekStyle,
             globalAnnouncement,
             toggleDarkMode,

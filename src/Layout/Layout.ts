@@ -287,6 +287,23 @@ export function initThreeBackground(isDarkMode = false) {
     return {
         updateTheme: (newVal) => {
             state.isDark = newVal;
+        },
+        celebrate: () => {
+            // 1. 泡泡加速
+            bubbles.forEach(b => {
+                b.userData.speed *= 3;
+                setTimeout(() => b.userData.speed /= 3, 3000);
+            });
+
+            // 2. 網格變色
+            const originalColor = geoNetMaterial.color.getHex();
+            geoNetMaterial.color.setHex(0xffd700); // Gold
+            setTimeout(() => geoNetMaterial.color.setHex(originalColor), 3000);
+
+            // 3. 星空閃爍加速
+            const originalSize = starMaterial.size;
+            starMaterial.size = 0.5;
+            setTimeout(() => starMaterial.size = originalSize, 3000);
         }
     };
 }
@@ -364,6 +381,24 @@ const LayoutComponent = defineComponent({
                         </span>
                     </button>
 
+                    <!-- Back to Top -->
+                    <button @click="scrollToTop" 
+                            class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
+                        <span class="text-2xl">⬆️</span>
+                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            回到頂端
+                        </span>
+                    </button>
+
+                    <!-- Go Back -->
+                    <button @click="goBack" 
+                            class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
+                        <span class="text-2xl">⬅️</span>
+                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            上一頁
+                        </span>
+                    </button>
+
                     <!-- Theme Toggle -->
                     <button @click="toggleDarkMode" 
                             class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
@@ -380,11 +415,11 @@ const LayoutComponent = defineComponent({
                         :class="[
                             'w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 relative overflow-hidden',
                             isDarkMode 
-                                ? 'bg-slate-900 border-emerald-500/40 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
-                                : 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-white/40 text-white shadow-emerald-500/40'
+                                ? 'bg-slate-900 border-slate-400/40 text-slate-300 shadow-[0_0_20px_rgba(148,163,184,0.3)]' 
+                                : 'bg-slate-900 border-white/40 text-white shadow-black/40'
                         ]">
                     <!-- Glow effect for dark mode -->
-                    <div v-if="isDarkMode" class="absolute inset-0 bg-emerald-500/10 animate-pulse"></div>
+                    <div v-if="isDarkMode" class="absolute inset-0 bg-slate-400/10 animate-pulse"></div>
                     
                     <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -417,7 +452,7 @@ const LayoutComponent = defineComponent({
         </div>
 
         <!-- Footer -->
-        <footer class="mt-20 pb-24 text-center text-slate-400 text-sm">
+        <footer class="mt-20 pb-24 text-center text-slate-500 dark:text-slate-400 text-sm">
             <p>© 2026 Elon提醒出國玩記得注意荷包 ✈️</p>
         </footer>
     `,
@@ -611,7 +646,13 @@ const LayoutComponent = defineComponent({
             localStorage.setItem('darkMode', isDarkMode.value ? 'true' : 'false');
         };
         const goToHome = () => {
-            window.location.href = './';
+            window.location.href = '/index.html';
+        };
+        const scrollToTop = () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        const goBack = () => {
+            window.history.back();
         };
         const fetchGlobalAnnouncement = async () => {
             try {
@@ -626,7 +667,7 @@ const LayoutComponent = defineComponent({
             }
         };
         const handleGlobalClick = (e: MouseEvent) => {
-            createParticles(e.clientX, e.clientY, isDarkMode.value ? '#34d399' : '#10b981');
+            createParticles(e.clientX, e.clientY, isDarkMode.value ? '#94a3b8' : '#0f172a');
         };
 
         // ==========================================
@@ -637,6 +678,8 @@ const LayoutComponent = defineComponent({
             document.title = props.title;
 
             threeBg = initThreeBackground(isDarkMode.value);
+            // @ts-ignore
+            window.threeBg = threeBg;
 
             const savedDarkMode = localStorage.getItem('darkMode') === 'true';
             isDarkMode.value = savedDarkMode;
@@ -673,7 +716,9 @@ const LayoutComponent = defineComponent({
             peekStyle,
             globalAnnouncement,
             toggleDarkMode,
-            goToHome
+            goToHome,
+            scrollToTop,
+            goBack
         };
     }
 });

@@ -28,7 +28,7 @@ const Home = defineComponent({
         description: '出國旅行必備物品清單，幫您輕鬆整理行李',
         icon: '🧳',
         category: 'tool',
-        link: '/src/view/TakeList/TakeList.html',
+        link: `${import.meta.env.BASE_URL}src/view/TakeList/TakeList.html`,
         status: 'active',
         tag: '🌍 支援多國'
       },
@@ -38,7 +38,7 @@ const Home = defineComponent({
         description: '猶豫不決嗎？讓轉盤幫您做決定！支援自定義獎項',
         icon: '🎡',
         category: 'game',
-        link: '/src/view/Turntable/Turntable.html',
+        link: `${import.meta.env.BASE_URL}src/view/Turntable/Turntable.html`,
         status: 'active',
         tag: '🎰 好運連連'
       },

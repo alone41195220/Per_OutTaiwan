@@ -293,7 +293,7 @@ const TakeList = defineComponent({
 
     const fetchAnnouncements = async () => {
       try {
-        const response = await fetch(`/announcements.json?t=${Date.now()}`);
+        const response = await fetch(`${import.meta.env.BASE_URL}announcements.json?t=${Date.now()}`);
         if (!response.ok) throw new Error('Fetch failed');
         const data = await response.json();
         

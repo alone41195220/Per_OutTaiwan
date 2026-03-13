@@ -646,7 +646,7 @@ const LayoutComponent = defineComponent({
             localStorage.setItem('darkMode', isDarkMode.value ? 'true' : 'false');
         };
         const goToHome = () => {
-            window.location.href = '/index.html';
+            window.location.href = import.meta.env.BASE_URL + 'index.html';
         };
         const scrollToTop = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -656,7 +656,7 @@ const LayoutComponent = defineComponent({
         };
         const fetchGlobalAnnouncement = async () => {
             try {
-                const response = await fetch(`/announcements.json?t=${Date.now()}`);
+                const response = await fetch(`${import.meta.env.BASE_URL}announcements.json?t=${Date.now()}`);
                 if (!response.ok) throw new Error('Global fetch failed');
                 const data = await response.json();
                 if (data.global) {

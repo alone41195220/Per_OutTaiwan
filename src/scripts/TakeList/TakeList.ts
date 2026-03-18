@@ -12,6 +12,8 @@ const TakeList = defineComponent({
     const selectedCountry = ref('');
     const selectedGender = ref('');
     const searchQuery = ref('');
+    const selectedCategoryFilter = ref('All');
+    const expandedCategories = ref<Record<string, boolean>>({});
     const isHeaderExpanded = ref(false);
     const peekingActive = ref(false);
     const showResetModal = ref(false);
@@ -37,96 +39,129 @@ const TakeList = defineComponent({
     const defaultItems = {
       must: [
         { id: 'm1', name: '護照', checked: false },
-        { id: 'm2', name: '錢包', checked: false },
-        { id: 'm3', name: '信用卡', checked: false },
-        { id: 'm4', name: '現金', checked: false },
-        { id: 'm5', name: '手機', checked: false },
-        { id: 'm6', name: '充電線', checked: false },
-        { id: 'm7', name: '行動電源', checked: false },
-        { id: 'm8', name: '機票 / 電子機票', checked: false },
-        { id: 'm9', name: '旅遊保險', checked: false },
-        { id: 'm10', name: '住宿資訊', checked: false },
-        { id: 'm11', name: 'eSIM / 網路', checked: false },
-        { id: 'm12', name: '轉接頭', checked: false }
+        { id: 'm2', name: '手機', checked: false },
+        { id: 'm3', name: '錢包', checked: false },
+        { id: 'm4', name: '信用卡', checked: false },
+        { id: 'm5', name: '網路卡/ESIM', checked: false },
+        { id: 'm6', name: '錢(台幣/外幣)', checked: false }
       ],
       categories: [
         {
-          name: '🧴 洗漱用品',
-          icon: '🧴',
+          name: '其他重要物品',
+          icon: '💼',
           items: [
-            { id: 't1', name: '牙刷', checked: false },
-            { id: 't2', name: '牙膏', checked: false },
-            { id: 't3', name: '洗面乳', checked: false },
-            { id: 't4', name: '洗髮精', checked: false },
-            { id: 't5', name: '沐浴乳', checked: false },
-            { id: 't6', name: '毛巾', checked: false },
-            { id: 't7', name: '梳子', checked: false },
-            { id: 't8', name: '刮鬍刀', checked: false },
-            { id: 't9', name: '指甲剪', checked: false },
-            { id: 't10', name: '化妝棉', checked: false },
-            { id: 't11', name: '卸妝水', checked: false, gender: 'female' },
-            { id: 't12', name: '保養品', checked: false, gender: 'female' },
-            { id: 't13', name: '防曬', checked: false, gender: 'female' },
-            { id: 't14', name: '化妝品', checked: false, gender: 'female' }
+            { id: 'i1', name: '登機證(可以申請記得先申請)', checked: false },
+            { id: 'i2', name: '證件(身分證 健保卡)', checked: false },
+            { id: 'i3', name: '行動電源', checked: false },
+            { id: 'i4', name: '雨傘', checked: false },
+            { id: 'i5', name: '萬國轉接頭', checked: false },
+            { id: 'i6', name: '充電頭2顆', checked: false },
+            { id: 'i7', name: '充電線2條(記得拿一條跟行動電源放一起)', checked: false }
           ]
         },
         {
-          name: '👕 衣物',
+          name: '包包',
+          icon: '🎒',
+          items: [
+            { id: 'b1', name: '後背包', checked: false },
+            { id: 'b2', name: '側背包', checked: false },
+            { id: 'b3', name: '收納腰包', checked: false },
+            { id: 'b4', name: '行李替大~包 (掛行李箱上那個)', checked: false },
+            { id: 'b5', name: '壓縮袋', checked: false }
+          ]
+        },
+        {
+          name: '衣物',
           icon: '👕',
           items: [
-            { id: 'c1', name: '內衣', checked: false },
-            { id: 'c2', name: '內褲', checked: false },
-            { id: 'c3', name: '襪子', checked: false },
-            { id: 'c4', name: 'T-shirt', checked: false },
-            { id: 'c5', name: '外套', checked: false },
-            { id: 'c6', name: '睡衣', checked: false },
-            { id: 'c7', name: '拖鞋', checked: false },
-            { id: 'c8', name: '保暖衣物', checked: false, country: 'korea' },
-            { id: 'c9', name: '圍巾', checked: false, country: 'korea' },
-            { id: 'c10', name: '手套', checked: false, country: 'korea' },
-            { id: 'c11', name: '絲襪', checked: false, gender: 'female' },
-            { id: 'c12', name: '裙子', checked: false, gender: 'female' },
-            { id: 'c13', name: '化妝包', checked: false, gender: 'female' }
+            { id: 'c1', name: '衣服(記得帶睡衣) [幾夜]', checked: false },
+            { id: 'c2', name: '褲子(記得帶睡褲) [幾夜]', checked: false },
+            { id: 'c3', name: '內褲 [幾天]', checked: false },
+            { id: 'c4', name: '內衣 [幾天]', checked: false },
+            { id: 'c5', name: '襪子 [幾天]', checked: false },
+            { id: 'c6', name: '拖鞋/涼鞋/布鞋', checked: false },
+            { id: 'c7', name: '外套', checked: false },
+            { id: 'c8', name: '帽子', checked: false }
           ]
         },
         {
-          name: '📱 電子用品',
+          name: '盥洗用品',
+          icon: '🧴',
+          items: [
+            { id: 't1', name: '牙刷牙膏', checked: false },
+            { id: 't2', name: '洗面乳', checked: false },
+            { id: 't3', name: '護髮乳', checked: false },
+            { id: 't4', name: '洗臉巾', checked: false },
+            { id: 't5', name: '隱形眼鏡+清洗液', checked: false },
+            { id: 't6', name: '髒衣袋', checked: false },
+            { id: 't7', name: '壓縮毛巾', checked: false },
+            { id: 't8', name: '牙籤', checked: false },
+            { id: 't9', name: '頸枕', checked: false },
+            { id: 't10', name: '眼罩', checked: false },
+            { id: 't11', name: '耳塞', checked: false }
+          ]
+        },
+        {
+          name: '文具用品/3C/備品',
           icon: '📱',
           items: [
-            { id: 'e1', name: '手機', checked: false },
-            { id: 'e2', name: '充電線', checked: false },
-            { id: 'e3', name: '行動電源', checked: false },
-            { id: 'e4', name: '相機', checked: false },
-            { id: 'e5', name: '相機電池', checked: false },
-            { id: 'e6', name: '記憶卡', checked: false },
-            { id: 'e7', name: '耳機', checked: false },
-            { id: 'e8', name: '轉接頭', checked: false }
+            { id: 's1', name: '小剪刀(記得丟行李箱)', checked: false },
+            { id: 's2', name: '膠帶', checked: false },
+            { id: 's3', name: '筆', checked: false },
+            { id: 's4', name: '耳機', checked: false },
+            { id: 's5', name: '自拍棒', checked: false },
+            { id: 's6', name: '絕緣膠帶', checked: false },
+            { id: 's7', name: '飲料提袋', checked: false },
+            { id: 's8', name: '環保袋', checked: false },
+            { id: 's9', name: '衛生紙', checked: false },
+            { id: 's10', name: '濕紙巾', checked: false },
+            { id: 's11', name: '垃圾袋', checked: false }
           ]
         },
         {
-          name: '💊 醫藥用品',
+          name: '藥品',
           icon: '💊',
           items: [
-            { id: 'p1', name: '常備藥', checked: false },
-            { id: 'p2', name: '感冒藥', checked: false },
-            { id: 'p3', name: '腸胃藥', checked: false },
-            { id: 'p4', name: 'OK繃', checked: false },
-            { id: 'p5', name: '防蚊液', checked: false },
-            { id: 'p6', name: '維他命', checked: false }
+            { id: 'p1', name: '小護士', checked: false },
+            { id: 'p2', name: '防蚊液', checked: false },
+            { id: 'p3', name: '木瓜霜', checked: false },
+            { id: 'p4', name: '生理食鹽水', checked: false },
+            { id: 'p5', name: '眼藥水', checked: false },
+            { id: 'p6', name: '止痛藥', checked: false },
+            { id: 'p7', name: 'ok蹦', checked: false },
+            { id: 'p8', name: '棉花棒', checked: false }
           ]
         },
         {
-          name: '✈️ 旅行用品',
-          icon: '✈️',
+          name: '化妝品',
+          icon: '💄',
           items: [
-            { id: 'tr1', name: '行李箱', checked: false },
-            { id: 'tr2', name: '行李鎖', checked: false },
-            { id: 'tr3', name: '行李秤', checked: false },
-            { id: 'tr4', name: '旅行枕', checked: false },
-            { id: 'tr5', name: '眼罩', checked: false },
-            { id: 'tr6', name: '耳塞', checked: false },
-            { id: 'tr7', name: '水壺', checked: false },
-            { id: 'tr8', name: '折疊袋', checked: false }
+            { id: 'mk1', name: '防曬', checked: false },
+            { id: 'mk2', name: '粉底液+刀', checked: false },
+            { id: 'mk3', name: '粉餅+海綿', checked: false },
+            { id: 'mk4', name: '定妝液', checked: false },
+            { id: 'mk5', name: '定妝粉', checked: false },
+            { id: 'mk6', name: '腮紅', checked: false },
+            { id: 'mk7', name: '眼影+刷具', checked: false },
+            { id: 'mk8', name: '眉粉', checked: false },
+            { id: 'mk9', name: '眼線筆', checked: false },
+            { id: 'mk10', name: '睫毛膏+夾', checked: false },
+            { id: 'mk11', name: '口紅', checked: false },
+            { id: 'mk12', name: '卸妝水+巾', checked: false },
+            { id: 'mk13', name: '梳子', checked: false },
+            { id: 'mk14', name: '髮油', checked: false },
+            { id: 'mk15', name: '香水', checked: false },
+            { id: 'mk16', name: '髮圈', checked: false },
+            { id: 'mk17', name: '鏡子', checked: false }
+          ]
+        },
+        {
+          name: '保養品',
+          icon: '✨',
+          items: [
+            { id: 'sk1', name: '化妝水', checked: false },
+            { id: 'sk2', name: '蘆薈膠', checked: false },
+            { id: 'sk3', name: '乳液', checked: false }
           ]
         }
       ]
@@ -154,13 +189,25 @@ const TakeList = defineComponent({
     });
 
     const filteredCategories = computed(() => {
-      if (!searchQuery.value) return categories.value;
+      let result = categories.value;
       
-      return categories.value.map(cat => ({
-        ...cat,
-        items: cat.items.filter(item => item.name.includes(searchQuery.value))
-      })).filter(cat => cat.items.length > 0);
+      if (selectedCategoryFilter.value !== 'All') {
+        result = result.filter(cat => cat.name === selectedCategoryFilter.value);
+      }
+      
+      if (searchQuery.value) {
+        result = result.map(cat => ({
+          ...cat,
+          items: cat.items.filter(item => item.name.includes(searchQuery.value))
+        })).filter(cat => cat.items.length > 0);
+      }
+      
+      return result;
     });
+
+    const toggleCategory = (name: string) => {
+      expandedCategories.value[name] = !expandedCategories.value[name];
+    };
 
     const totalCount = computed(() => packingList.length);
     const packedCount = computed(() => packingList.filter(item => item.checked).length);
@@ -185,6 +232,8 @@ const TakeList = defineComponent({
       saveState();
     };
 
+    const getStorageKey = () => `travel_packing_${selectedCountry.value}_${selectedGender.value}`;
+
     const initializeList = () => {
       const list = [];
       
@@ -197,23 +246,26 @@ const TakeList = defineComponent({
       defaultItems.categories.forEach(cat => {
         cat.items.forEach(item => {
           // Filter by gender
-          if (item.gender && item.gender !== selectedGender.value) return;
+          if ('gender' in item && item.gender !== selectedGender.value) return;
           // Filter by country
-          if (item.country && item.country !== selectedCountry.value) return;
+          if ('country' in item && item.country !== selectedCountry.value) return;
           
           list.push({ ...item, isMust: false, category: cat.name });
         });
       });
 
-      // Merge with saved state if exists
-      const saved = localStorage.getItem('travel_packing_state');
+      // Restore checked state
+      const saved = localStorage.getItem(getStorageKey());
       if (saved) {
-        const state = JSON.parse(saved);
-        if (state.country === selectedCountry.value && state.gender === selectedGender.value) {
+        try {
+          const checkedIds = JSON.parse(saved);
           list.forEach(item => {
-            const savedItem = state.items.find(si => si.id === item.id);
-            if (savedItem) item.checked = savedItem.checked;
+            if (checkedIds.includes(item.id)) {
+              item.checked = true;
+            }
           });
+        } catch (e) {
+          console.error('Failed to parse saved items', e);
         }
       }
 
@@ -245,7 +297,7 @@ const TakeList = defineComponent({
     };
 
     const confirmReset = () => {
-      localStorage.removeItem('travel_packing_state');
+      localStorage.removeItem(getStorageKey());
       packingList.forEach(item => item.checked = false);
       showResetModal.value = false;
       createParticles(window.innerWidth/2, window.innerHeight/2, '#ef4444');
@@ -256,39 +308,21 @@ const TakeList = defineComponent({
     };
 
     const saveState = () => {
-      const state = {
-        gender: selectedGender.value,
-        step: currentStep.value,
-        items: packingList.map(item => ({ id: item.id, checked: item.checked })),
-        dark: document.body.classList.contains('dark')
-      };
-      localStorage.setItem('travel_packing_state', JSON.stringify(state));
+      if (selectedCountry.value && selectedGender.value && currentStep.value === 3) {
+        const checkedItemIds = packingList.filter(item => item.checked).map(item => item.id);
+        if (checkedItemIds.length > 0) {
+          localStorage.setItem(getStorageKey(), JSON.stringify(checkedItemIds));
+        } else {
+          localStorage.removeItem(getStorageKey());
+        }
+      }
     };
 
     const loadState = () => {
-      const saved = localStorage.getItem('travel_packing_state');
-      if (saved) {
-        try {
-          const state = JSON.parse(saved);
-          selectedGender.value = state.gender || '';
-          currentStep.value = Number(state.step) || 1;
-          
-          if (state.dark) {
-            document.body.classList.add('dark');
-          }
-
-          if (currentStep.value === 3 && selectedGender.value) {
-            initializeList();
-          }
-
-          if (currentStep.value === 3) {
-            currentStep.value = 1;
-          }
-        } catch (e) {
-          console.error('Failed to load state:', e);
-          currentStep.value = 1;
-        }
-      }
+      // Always start at step 1, don't remember country/gender
+      currentStep.value = 1;
+      selectedCountry.value = '';
+      selectedGender.value = '';
     };
 
     const fetchAnnouncements = async () => {
@@ -318,6 +352,9 @@ const TakeList = defineComponent({
       selectedCountry,
       selectedGender,
       searchQuery,
+      selectedCategoryFilter,
+      expandedCategories,
+      categories,
       countries,
       mustItems,
       filteredCategories,
@@ -331,6 +368,7 @@ const TakeList = defineComponent({
       showResetModal,
       selectCountry,
       selectGender,
+      toggleCategory,
       toggleItem,
       markAllPacked,
       resetList,
@@ -404,7 +442,7 @@ const TakeList = defineComponent({
                         <span class="mr-3">{{ countries[selectedCountry].flag }}</span>
                         <span class="truncate">{{ countries[selectedCountry].name }} 清單</span>
                         <span class="ml-3 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-full uppercase tracking-widest">
-                            {{ selectedGender === 'male' ? 'MALE 👨' : 'FEMALE 👩' }}
+                            {{ selectedGender === 'male' ? '👨' : '👩' }}
                         </span>
                     </h1>
                     
@@ -452,13 +490,22 @@ const TakeList = defineComponent({
                         </div>
                     </div>
  
-                    <!-- Search -->
-                    <div class="relative">
-                        <input v-model="searchQuery" type="text" placeholder="搜尋物品..." 
-                               class="w-full py-4 pl-12 pr-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all dark:text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 top-4.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                    <!-- Search & Filter -->
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <!-- Dropdown -->
+                        <select v-model="selectedCategoryFilter" class="py-4 px-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 outline-none transition-all dark:text-white font-bold appearance-none cursor-pointer">
+                            <option value="All">全部類別</option>
+                            <option v-for="cat in categories" :key="cat.name" :value="cat.name">{{ cat.icon }} {{ cat.name }}</option>
+                        </select>
+
+                        <!-- Search -->
+                        <div class="relative flex-1">
+                            <input v-model="searchQuery" type="text" placeholder="搜尋物品..." 
+                                   class="w-full py-4 pl-12 pr-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all dark:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 top-4.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -468,6 +515,9 @@ const TakeList = defineComponent({
                 <div class="absolute -right-12 -top-12 text-white/10 text-[12rem] font-black rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-700">MUST</div>
                 <h2 class="text-3xl font-black mb-8 flex items-center relative z-10">
                     <span class="mr-3">🚨</span> 絕對不能忘記
+                    <div v-if="mustItems.length > 0 && mustItems.every(i => i.checked)" class="ml-4 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm animate-in zoom-in duration-300" title="已完成">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
                 </h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                     <div v-for="item in mustItems" :key="item.id" 
@@ -485,12 +535,23 @@ const TakeList = defineComponent({
             </div>
  
             <!-- Categories -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div v-for="category in filteredCategories" :key="category.name" class="glass-card p-8 rounded-[2.5rem] shadow-xl border border-white/20">
-                    <h3 class="text-2xl font-black mb-6 text-slate-900 dark:text-white flex items-center">
-                        <span class="mr-3 p-2 bg-slate-100 dark:bg-slate-800 rounded-2xl">{{ category.icon }}</span> {{ category.name }}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start">
+                <div v-for="category in filteredCategories" :key="category.name" 
+                     class="glass-card rounded-[2rem] shadow-xl border overflow-hidden transition-all duration-300"
+                     :class="category.items.length > 0 && category.items.every(i => i.checked) ? 'border-emerald-400/50 dark:border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-900/10' : 'border-white/20'">
+                    <h3 @click="toggleCategory(category.name)" class="text-xl md:text-2xl font-black p-5 md:p-6 text-slate-900 dark:text-white flex items-center justify-between cursor-pointer group hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors m-0">
+                        <div class="flex items-center">
+                            <span class="mr-3 p-2 bg-slate-100 dark:bg-slate-800 rounded-2xl">{{ category.icon }}</span> 
+                            {{ category.name }}
+                            <div v-if="category.items.length > 0 && category.items.every(i => i.checked)" class="ml-3 w-7 h-7 md:w-8 md:h-8 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center animate-in zoom-in duration-300" title="已完成">
+                                <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': expandedCategories[category.name] }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
                     </h3>
-                    <div class="space-y-3">
+                    <div v-show="expandedCategories[category.name]" class="px-5 pb-5 md:px-6 md:pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div v-for="item in category.items" :key="item.id" 
                              @click="toggleItem(item, $event)"
                              class="flex items-center p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all group border border-transparent"

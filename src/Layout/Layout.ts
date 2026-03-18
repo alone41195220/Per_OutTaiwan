@@ -7,7 +7,8 @@ export function initThreeBackground(isDarkMode = false) {
     if (!canvas) return;
 
     // 建立一個內部狀態供 animate 讀取，避免重複初始化
-    const state = { isDark: isDarkMode };
+    const state = { isDark: isDarkMode, speedMultiplier: 1, timeMs: Date.now() };
+    let lastTime = Date.now();
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -190,14 +191,20 @@ export function initThreeBackground(isDarkMode = false) {
     const animate = () => {
         requestAnimationFrame(animate);
 
+        const now = Date.now();
+        const delta = now - lastTime;
+        lastTime = now;
+        state.timeMs += delta * state.speedMultiplier;
+        const time = state.timeMs * 0.001;
+
         // 即時修正顏色邏輯，改為從 state 讀取
         const activeColor = state.isDark ? 0x00f2ff : 0x044e3a; 
         geoNetMaterial.color.setHex(activeColor);
         bubbleMaterial.color.setHex(activeColor);
         geoNetMaterial.opacity = state.isDark ? 0.1 : 0.2;
 
-        stars.rotation.y += 0.0001;
-        geoNet.rotation.y += 0.0004;
+        stars.rotation.y += 0.0001 * state.speedMultiplier;
+        geoNet.rotation.y += 0.0004 * state.speedMultiplier;
 
         // 飛行生物邏輯
         creatures.forEach(wrapper => {
@@ -205,12 +212,11 @@ export function initThreeBackground(isDarkMode = false) {
             
             // 1. 動態速度：俯衝加速，上升減速
             const verticalMomentum = Math.cos(data.angle * 3) * 0.001; 
-            data.angle += (data.speed + verticalMomentum);
+            data.angle += (data.speed + verticalMomentum) * state.speedMultiplier;
 
             wrapper.position.x = Math.cos(data.angle) * data.radiusX;
             wrapper.position.z = Math.sin(data.angle) * data.radiusZ;
             
-            const time = Date.now() * 0.001;
             const hover = Math.sin(data.angle * 3) * 5; 
             const jitter = Math.sin(time + data.baseY) * 0.5; 
             wrapper.position.y = data.baseY + hover + jitter;
@@ -225,12 +231,12 @@ export function initThreeBackground(isDarkMode = false) {
 
             if (!state.isDark) {
                 // 翅膀邏輯：使用變慢後的 flapSpeed
-                const flap = Math.sin(Date.now() * data.birdRef.userData.flapSpeed);
+                const flap = Math.sin(state.timeMs * data.birdRef.userData.flapSpeed);
                 data.birdRef.userData.leftWingPivot.rotation.z = flap * 0.6;
                 data.birdRef.userData.rightWingPivot.rotation.z = -flap * 0.6;
                 data.birdRef.rotation.x = Math.sin(time * 5) * 0.05;
             } else {
-                data.ufoRef.rotation.y += 0.1;
+                data.ufoRef.rotation.y += 0.1 * state.speedMultiplier;
                 wrapper.position.x += Math.sin(time * 2) * 0.2;
             }
         });
@@ -238,8 +244,8 @@ export function initThreeBackground(isDarkMode = false) {
         // 泡泡運動
         bubbles.forEach(mesh => {
             if (mesh.userData.popping) return;
-            mesh.position.y += mesh.userData.speed;
-            mesh.position.x += Math.sin(Date.now() * 0.001 + mesh.userData.wobble) * 0.02;
+            mesh.position.y += mesh.userData.speed * state.speedMultiplier;
+            mesh.position.x += Math.sin(time + mesh.userData.wobble) * 0.02 * state.speedMultiplier;
 
             if (mesh.position.y > 45) {
                 mesh.userData.popping = true;
@@ -287,6 +293,18 @@ export function initThreeBackground(isDarkMode = false) {
     return {
         updateTheme: (newVal) => {
             state.isDark = newVal;
+        },
+        setSpeed: (multiplier, duration = 0) => {
+            if (duration > 0) {
+                gsap.to(state, {
+                    speedMultiplier: multiplier,
+                    duration: duration,
+                    ease: "power2.inOut"
+                });
+            } else {
+                gsap.killTweensOf(state);
+                state.speedMultiplier = multiplier;
+            }
         },
         celebrate: () => {
             // 1. 泡泡加速

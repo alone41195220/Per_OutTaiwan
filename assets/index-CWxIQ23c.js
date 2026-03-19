@@ -2926,7 +2926,7 @@ void main() {
                     <button @click="goToHome" 
                             class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
                         <span class="text-2xl">🏠</span>
-                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        <span class="absolute right-16 bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-200 dark:border-white/10">
                             回首頁
                         </span>
                     </button>
@@ -2935,7 +2935,7 @@ void main() {
                     <button @click="scrollToTop" 
                             class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
                         <span class="text-2xl">⬆️</span>
-                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        <span class="absolute right-16 bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-200 dark:border-white/10">
                             回到頂端
                         </span>
                     </button>
@@ -2944,7 +2944,7 @@ void main() {
                     <button @click="goBack" 
                             class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
                         <span class="text-2xl">⬅️</span>
-                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        <span class="absolute right-16 bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-200 dark:border-white/10">
                             上一頁
                         </span>
                     </button>
@@ -2954,7 +2954,7 @@ void main() {
                             class="w-14 h-14 rounded-full flex items-center justify-center transition-all glass-card hover:scale-110 active:scale-95 shadow-2xl group border border-white/20">
                         <span v-if="isDarkMode" class="text-2xl">☀️</span>
                         <span v-else class="text-2xl">🌙</span>
-                        <span class="absolute right-16 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        <span class="absolute right-16 bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-slate-200 dark:border-white/10">
                             {{ isDarkMode ? '切換亮色模式' : '切換深色模式' }}
                         </span>
                     </button>
@@ -2966,7 +2966,7 @@ void main() {
                             'w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 relative overflow-hidden',
                             isDarkMode 
                                 ? 'bg-slate-900 border-slate-400/40 text-slate-300 shadow-[0_0_20px_rgba(148,163,184,0.3)]' 
-                                : 'bg-slate-900 border-white/40 text-white shadow-black/40'
+                                : 'bg-white border-slate-200 text-slate-900 shadow-slate-200/50'
                         ]">
                     <!-- Glow effect for dark mode -->
                     <div v-if="isDarkMode" class="absolute inset-0 bg-slate-400/10 animate-pulse"></div>

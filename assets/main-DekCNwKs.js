@@ -1,4 +1,4 @@
-import{c as s,d as i,L as n,r,a as d,b as c}from"./index-DppPVCsV.js";const u=i({name:"Home",components:{LayoutComponent:n},setup(){const e=r("all"),a=r([{id:"packing-list",title:"打包清單",description:"出國旅行必備物品清單，幫您輕鬆整理行李",icon:"🧳",category:"tool",link:"/Per_OutTaiwan/src/view/TakeList/TakeList.html",status:"active",tag:"🌍 支援多國"},{id:"turntable",title:"幸運轉盤",description:"猶豫不決嗎？讓轉盤幫您做決定！支援自定義獎項",icon:"🎡",category:"game",link:"/Per_OutTaiwan/src/view/Turntable/Turntable.html",status:"active",tag:"🎰 好運連連"},{id:"itinerary",title:"行程規劃",description:"即將推出",icon:"✈️",category:"tool",link:"#",status:"developing",tag:"🚧 開發中"},{id:"budget",title:"預算計算",description:"即將推出",icon:"💰",category:"tool",link:"#",status:"developing",tag:"🚧 開發中"}]),o=d(()=>e.value==="all"?a.value:a.value.filter(t=>t.category===e.value));return{activeCategory:e,filteredFeatures:o,handleFeatureClick:(t,l)=>{t.status!=="developing"&&(c(l.clientX,l.clientY,"#0f172a"),setTimeout(()=>{window.location.href=t.link},300))},setCategory:t=>{e.value=t}}},template:`
+import{c as s,d as i,L as n,r,a as d,b as c}from"./index-CWxIQ23c.js";const u=i({name:"Home",components:{LayoutComponent:n},setup(){const e=r("all"),a=r([{id:"packing-list",title:"打包清單",description:"出國旅行必備物品清單，幫您輕鬆整理行李",icon:"🧳",category:"tool",link:"/Per_OutTaiwan/src/view/TakeList/TakeList.html",status:"active",tag:"🌍 支援多國"},{id:"turntable",title:"幸運轉盤",description:"猶豫不決嗎？讓轉盤幫您做決定！支援自定義獎項",icon:"🎡",category:"game",link:"/Per_OutTaiwan/src/view/Turntable/Turntable.html",status:"active",tag:"🎰 好運連連"},{id:"itinerary",title:"行程規劃",description:"即將推出",icon:"✈️",category:"tool",link:"#",status:"developing",tag:"🚧 開發中"},{id:"budget",title:"預算計算",description:"即將推出",icon:"💰",category:"tool",link:"#",status:"developing",tag:"🚧 開發中"}]),o=d(()=>e.value==="all"?a.value:a.value.filter(t=>t.category===e.value));return{activeCategory:e,filteredFeatures:o,handleFeatureClick:(t,l)=>{t.status!=="developing"&&(c(l.clientX,l.clientY,"#0f172a"),setTimeout(()=>{window.location.href=t.link},300))},setCategory:t=>{e.value=t}}},template:`
     <LayoutComponent title="OutTaiwan 功能選單">
       <!-- 首頁功能列表 -->
       <div class="max-w-6xl mx-auto px-4 py-12">
@@ -6,9 +6,6 @@ import{c as s,d as i,L as n,r,a as d,b as c}from"./index-DppPVCsV.js";const u=i(
           <h1 class="text-5xl md:text-7xl font-black mb-6 text-black dark:text-white drop-shadow-sm">
             Elon Tools 😀
           </h1>
-          <p class="text-xl text-slate-700 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            探索一系列實用工具與趣味遊戲，讓您的生活與旅行更加輕鬆有趣。
-          </p>
         </div>
         
         <!-- 分類過濾按鈕 -->
@@ -17,7 +14,7 @@ import{c as s,d as i,L as n,r,a as d,b as c}from"./index-DppPVCsV.js";const u=i(
             <button 
               @click="setCategory('all')"
               :class="['px-8 py-2.5 rounded-xl transition-all duration-300 font-bold text-xl flex items-center justify-center', 
-                       activeCategory === 'all' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
+                       activeCategory === 'all' ? 'bg-slate-100 text-slate-900 dark:bg-slate-100 dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
               title="全部"
             >
               🏠
@@ -25,7 +22,7 @@ import{c as s,d as i,L as n,r,a as d,b as c}from"./index-DppPVCsV.js";const u=i(
             <button 
               @click="setCategory('tool')"
               :class="['px-8 py-2.5 rounded-xl transition-all duration-300 font-bold text-xl flex items-center justify-center', 
-                       activeCategory === 'tool' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
+                       activeCategory === 'tool' ? 'bg-slate-100 text-slate-900 dark:bg-slate-100 dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
               title="工具"
             >
               🛠️
@@ -33,7 +30,7 @@ import{c as s,d as i,L as n,r,a as d,b as c}from"./index-DppPVCsV.js";const u=i(
             <button 
               @click="setCategory('game')"
               :class="['px-8 py-2.5 rounded-xl transition-all duration-300 font-bold text-xl flex items-center justify-center', 
-                       activeCategory === 'game' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
+                       activeCategory === 'game' ? 'bg-slate-100 text-slate-900 dark:bg-slate-100 dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
               title="遊戲"
             >
               🎮
@@ -57,7 +54,7 @@ import{c as s,d as i,L as n,r,a as d,b as c}from"./index-DppPVCsV.js";const u=i(
             
             <div class="flex justify-center">
               <span :class="['inline-flex items-center px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors', 
-                            feature.status === 'active' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-slate-100 dark:group-hover:text-slate-900' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500']">
+                            feature.status === 'active' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 group-hover:bg-slate-200 group-hover:text-slate-900 dark:group-hover:bg-slate-100 dark:group-hover:text-slate-900' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500']">
                 {{ feature.status === 'active' ? (feature.tag || '立即使用') : '即將推出' }}
               </span>
             </div>

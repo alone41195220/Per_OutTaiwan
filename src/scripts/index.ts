@@ -96,9 +96,6 @@ const Home = defineComponent({
           <h1 class="text-5xl md:text-7xl font-black mb-6 text-black dark:text-white drop-shadow-sm">
             Elon Tools 😀
           </h1>
-          <p class="text-xl text-slate-700 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            探索一系列實用工具與趣味遊戲，讓您的生活與旅行更加輕鬆有趣。
-          </p>
         </div>
         
         <!-- 分類過濾按鈕 -->
@@ -107,7 +104,7 @@ const Home = defineComponent({
             <button 
               @click="setCategory('all')"
               :class="['px-8 py-2.5 rounded-xl transition-all duration-300 font-bold text-xl flex items-center justify-center', 
-                       activeCategory === 'all' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
+                       activeCategory === 'all' ? 'bg-slate-100 text-slate-900 dark:bg-slate-100 dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
               title="全部"
             >
               🏠
@@ -115,7 +112,7 @@ const Home = defineComponent({
             <button 
               @click="setCategory('tool')"
               :class="['px-8 py-2.5 rounded-xl transition-all duration-300 font-bold text-xl flex items-center justify-center', 
-                       activeCategory === 'tool' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
+                       activeCategory === 'tool' ? 'bg-slate-100 text-slate-900 dark:bg-slate-100 dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
               title="工具"
             >
               🛠️
@@ -123,7 +120,7 @@ const Home = defineComponent({
             <button 
               @click="setCategory('game')"
               :class="['px-8 py-2.5 rounded-xl transition-all duration-300 font-bold text-xl flex items-center justify-center', 
-                       activeCategory === 'game' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
+                       activeCategory === 'game' ? 'bg-slate-100 text-slate-900 dark:bg-slate-100 dark:text-slate-900 shadow-lg scale-105' : 'text-slate-600 dark:text-slate-300 hover:bg-white/10']"
               title="遊戲"
             >
               🎮
@@ -147,7 +144,7 @@ const Home = defineComponent({
             
             <div class="flex justify-center">
               <span :class="['inline-flex items-center px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors', 
-                            feature.status === 'active' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-slate-100 dark:group-hover:text-slate-900' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500']">
+                            feature.status === 'active' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 group-hover:bg-slate-200 group-hover:text-slate-900 dark:group-hover:bg-slate-100 dark:group-hover:text-slate-900' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500']">
                 {{ feature.status === 'active' ? (feature.tag || '立即使用') : '即將推出' }}
               </span>
             </div>

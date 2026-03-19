@@ -358,6 +358,23 @@
   border-radius: 50%;
 }
 
+/* Warning Flash Animation (Breathing Effect) */
+@keyframes warning-flash {
+  0%, 100% { 
+    transform: scale(1); 
+    background-color: #ef4444; /* bg-red-500 */
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  }
+  50% { 
+    transform: scale(1.15); 
+    background-color: #dc2626; /* bg-red-600 */
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.9);
+  }
+}
+.animate-warning-flash {
+  animation: warning-flash 1.2s infinite ease-in-out;
+}
+
 /* Page Transitions */
 .page-enter-active, .page-leave-active {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);

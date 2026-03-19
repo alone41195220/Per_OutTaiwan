@@ -310,18 +310,23 @@ const Turntable = defineComponent({
         </div>
 
         <!-- 手機版設定切換按鈕 -->
-        <button 
-          @click="isSettingsOpen = !isSettingsOpen"
-          class="lg:hidden fixed bottom-8 left-8 z-40 w-14 h-14 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-full shadow-2xl flex items-center justify-center hover:bg-black dark:hover:bg-white transition-all active:scale-90"
-        >
-          <svg v-if="!isSettingsOpen" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div class="fixed bottom-8 left-8 z-40 flex flex-col-reverse items-start gap-4 lg:hidden">
+          <button 
+            @click="isSettingsOpen = !isSettingsOpen"
+            class="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 relative overflow-hidden bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-white/40 text-slate-900 dark:text-white shadow-black/10 dark:shadow-black/40 dark:border-slate-400/40 dark:shadow-[0_0_20px_rgba(148,163,184,0.3)]"
+          >
+            <!-- Glow effect for dark mode -->
+            <div class="absolute inset-0 hidden dark:block bg-slate-400/10 animate-pulse"></div>
+            
+            <svg v-if="!isSettingsOpen" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         <div class="flex flex-col lg:flex-row gap-8 items-start">
           
@@ -335,7 +340,7 @@ const Turntable = defineComponent({
             <button 
               @click="spin" 
               :disabled="isSpinning"
-              class="neon-btn px-12 py-4 rounded-full text-white text-xl md:text-2xl font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 bg-slate-900 hover:bg-black shadow-lg shadow-black/20"
+              class="neon-btn px-12 py-4 rounded-full text-slate-900 dark:text-white text-xl md:text-2xl font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-black shadow-lg shadow-black/10 dark:shadow-black/20"
             >
               {{ isSpinning ? '旋轉中...' : '開始抽獎' }}
             </button>
@@ -371,12 +376,12 @@ const Turntable = defineComponent({
                     type="text" 
                     placeholder="輸入獎項名稱..."
                     @keyup.enter="addPrize"
-                    class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-slate-900 dark:text-white"
                   />
                   <div class="flex gap-2">
                     <select 
                       v-model="newItemLevel"
-                      class="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                      class="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
                     >
                       <option :value="0">普通獎</option>
                       <option :value="3">三等獎</option>
@@ -385,7 +390,7 @@ const Turntable = defineComponent({
                     </select>
                     <button 
                       @click="addPrize"
-                      class="px-6 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold hover:bg-black dark:hover:bg-white transition-all active:scale-95 shadow-lg shadow-black/20"
+                      class="px-6 py-3 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-black transition-all active:scale-95 shadow-lg shadow-black/10 dark:shadow-black/20"
                     >
                       新增
                     </button>
@@ -405,16 +410,16 @@ const Turntable = defineComponent({
                          prize.level === 1 ? 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 
                          prize.level === 2 ? 'bg-slate-400/10 border-slate-400/50' : 
                          prize.level === 3 ? 'bg-orange-600/10 border-orange-600/50' : 
-                         'bg-white/30 dark:bg-slate-800/30 border-white/10 hover:border-slate-900/30 dark:hover:border-slate-100/30'
+                         'bg-white/30 dark:bg-slate-800/30 border-slate-200 dark:border-white/10 hover:border-slate-900/30 dark:hover:border-slate-100/30'
                        ]">
                     <div class="flex items-center gap-3">
                       <div class="w-5 h-5 rounded-full shadow-inner border border-white/20" :style="{ backgroundColor: prize.color }"></div>
                       <div class="flex flex-col">
                         <span class="text-sm font-bold" :class="prize.level === 1 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200'">{{ prize.text }}</span>
                         <span v-if="prize.level > 0" :class="['text-[10px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md inline-block w-fit mt-0.5', 
-                                                               prize.level === 1 ? 'bg-amber-500 text-white' : 
-                                                               prize.level === 2 ? 'bg-slate-400 text-white' : 
-                                                               'bg-orange-600 text-white']">
+                                                               prize.level === 1 ? 'bg-amber-500 text-slate-900 dark:text-white' : 
+                                                               prize.level === 2 ? 'bg-slate-400 text-slate-900 dark:text-white' : 
+                                                               'bg-orange-600 text-slate-900 dark:text-white']">
                           {{ prize.level === 1 ? '一等獎' : prize.level === 2 ? '二等獎' : '三等獎' }}
                         </span>
                       </div>
@@ -452,7 +457,7 @@ const Turntable = defineComponent({
           <div class="text-4xl font-black text-slate-900 dark:text-slate-100 mb-6">{{ result?.text }}</div>
           <button 
             @click="showResultModal = false"
-            class="w-full py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-bold hover:bg-black dark:hover:bg-white transition-colors shadow-lg"
+            class="w-full py-3 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-black transition-colors shadow-lg"
           >
             太棒了！
           </button>

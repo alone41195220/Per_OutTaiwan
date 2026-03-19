@@ -8,15 +8,21 @@ const TakeList = defineComponent({
     LayoutComponent
   },
   setup() {
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
     const currentStep = ref(1);
     const selectedCountry = ref('');
     const selectedGender = ref('');
     const searchQuery = ref('');
     const selectedCategoryFilter = ref('All');
     const expandedCategories = ref<Record<string, boolean>>({});
-    const isHeaderExpanded = ref(false);
+    const mustItemsExpanded = ref(false);
+    const isCelebrationExpanded = ref(false);
+    const isHeaderExpanded = ref(!isMobile);
     const peekingActive = ref(false);
     const showResetModal = ref(false);
+    const showAddItemModal = ref(false);
+    const newItemName = ref('');
+    const newItemCategory = ref('🚨 絕對不能忘記');
     const packingList = reactive([]);
     const announcementConfig = ref({
       countries: {} as any,
@@ -168,7 +174,11 @@ const TakeList = defineComponent({
     };
 
     const mustItems = computed(() => {
-      return packingList.filter(item => item.isMust);
+      let items = packingList.filter(item => item.isMust);
+      if (searchQuery.value) {
+        items = items.filter(item => item.name.includes(searchQuery.value));
+      }
+      return items;
     });
 
     const categories = computed(() => {
@@ -176,7 +186,11 @@ const TakeList = defineComponent({
       const otherItems = packingList.filter(item => !item.isMust);
       
       defaultItems.categories.forEach(defCat => {
-        const items = otherItems.filter(item => item.category === defCat.name);
+        let items = otherItems.filter(item => item.category === defCat.name);
+        if (searchQuery.value) {
+          items = items.filter(item => item.name.includes(searchQuery.value));
+        }
+        
         if (items.length > 0) {
           cats.push({
             name: defCat.name,
@@ -193,13 +207,6 @@ const TakeList = defineComponent({
       
       if (selectedCategoryFilter.value !== 'All') {
         result = result.filter(cat => cat.name === selectedCategoryFilter.value);
-      }
-      
-      if (searchQuery.value) {
-        result = result.map(cat => ({
-          ...cat,
-          items: cat.items.filter(item => item.name.includes(searchQuery.value))
-        })).filter(cat => cat.items.length > 0);
       }
       
       return result;
@@ -233,6 +240,47 @@ const TakeList = defineComponent({
     };
 
     const getStorageKey = () => `travel_packing_${selectedCountry.value}_${selectedGender.value}`;
+    const getCustomStorageKey = () => `travel_packing_custom_${selectedCountry.value}_${selectedGender.value}`;
+
+    const saveCustomItems = () => {
+      const customItems = packingList.filter(item => item.isCustom);
+      localStorage.setItem(getCustomStorageKey(), JSON.stringify(customItems));
+    };
+
+    const addCustomItem = () => {
+      if (!newItemName.value.trim()) return;
+      
+      const isMust = newItemCategory.value === '🚨 絕對不能忘記';
+      const newItem = {
+        id: `custom_${Date.now()}`,
+        name: newItemName.value.trim(),
+        checked: false,
+        isMust: isMust,
+        category: newItemCategory.value,
+        isCustom: true
+      };
+      
+      packingList.push(newItem);
+      saveCustomItems();
+      
+      newItemName.value = '';
+      showAddItemModal.value = false;
+      
+      if (isMust) {
+        mustItemsExpanded.value = true;
+      } else {
+        expandedCategories.value[newItemCategory.value] = true;
+      }
+    };
+
+    const removeCustomItem = (id) => {
+      const index = packingList.findIndex(item => item.id === id);
+      if (index > -1) {
+        packingList.splice(index, 1);
+        saveCustomItems();
+        saveState();
+      }
+    };
 
     const initializeList = () => {
       const list = [];
@@ -253,6 +301,19 @@ const TakeList = defineComponent({
           list.push({ ...item, isMust: false, category: cat.name });
         });
       });
+
+      // Restore custom items
+      const customSaved = localStorage.getItem(getCustomStorageKey());
+      if (customSaved) {
+        try {
+          const customItems = JSON.parse(customSaved);
+          customItems.forEach(item => {
+            list.push(item);
+          });
+        } catch (e) {
+          console.error('Failed to parse custom items', e);
+        }
+      }
 
       // Restore checked state
       const saved = localStorage.getItem(getStorageKey());
@@ -307,6 +368,14 @@ const TakeList = defineComponent({
       showResetModal.value = false;
     };
 
+    const celebrateMore = () => {
+      for(let i=0; i<8; i++) {
+        setTimeout(() => {
+          createParticles(window.innerWidth/2 + (Math.random()-0.5)*400, window.innerHeight/2 + (Math.random()-0.5)*400, i % 2 === 0 ? '#10b981' : '#6366f1');
+        }, i * 150);
+      }
+    };
+
     const saveState = () => {
       if (selectedCountry.value && selectedGender.value && currentStep.value === 3) {
         const checkedItemIds = packingList.filter(item => item.checked).map(item => item.id);
@@ -323,6 +392,54 @@ const TakeList = defineComponent({
       currentStep.value = 1;
       selectedCountry.value = '';
       selectedGender.value = '';
+    };
+
+    const isWeatherMenuOpen = ref(false);
+    const selectedWeatherCity = ref(localStorage.getItem('weatherCity') || 'Taipei');
+    const weatherData = ref<any>(null);
+    const isWeatherLoading = ref(false);
+
+    const weatherCities = [
+      { id: 'Tokyo', name: '東京', lat: 35.6895, lon: 139.6917 },
+      { id: 'Seoul', name: '首爾', lat: 37.5665, lon: 126.9780 },
+      { id: 'Bangkok', name: '曼谷', lat: 13.7563, lon: 100.5018 },
+      { id: 'Paris', name: '巴黎', lat: 48.8566, lon: 2.3522 },
+      { id: 'London', name: '倫敦', lat: 51.5074, lon: -0.1278 },
+      { id: 'New York', name: '紐約', lat: 40.7128, lon: -74.0060 },
+      { id: 'Taipei', name: '台北', lat: 25.0330, lon: 121.5654 }
+    ];
+
+    const fetchWeather = async () => {
+      const city = weatherCities.find(c => c.id === selectedWeatherCity.value) || weatherCities[6];
+      isWeatherLoading.value = true;
+      try {
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true`);
+        const data = await res.json();
+        weatherData.value = data.current_weather;
+      } catch (e) {
+        console.error('天氣載入失敗:', e);
+      } finally {
+        isWeatherLoading.value = false;
+      }
+    };
+
+    const selectWeatherCity = (event: Event) => {
+      const target = event.target as HTMLSelectElement;
+      selectedWeatherCity.value = target.value;
+      localStorage.setItem('weatherCity', target.value);
+      fetchWeather();
+    };
+
+    const getWeatherIcon = (code: number) => {
+      if (code === 0) return '☀️';
+      if (code === 1 || code === 2 || code === 3) return '⛅';
+      if (code >= 45 && code <= 48) return '🌫️';
+      if (code >= 51 && code <= 67) return '🌧️';
+      if (code >= 71 && code <= 77) return '❄️';
+      if (code >= 80 && code <= 82) return '🌦️';
+      if (code >= 85 && code <= 86) return '🌨️';
+      if (code >= 95) return '⛈️';
+      return '☁️';
     };
 
     const fetchAnnouncements = async () => {
@@ -345,6 +462,7 @@ const TakeList = defineComponent({
     onMounted(() => {
       loadState();
       fetchAnnouncements();
+      fetchWeather();
     });
 
     return {
@@ -357,6 +475,8 @@ const TakeList = defineComponent({
       categories,
       countries,
       mustItems,
+      mustItemsExpanded,
+      isCelebrationExpanded,
       filteredCategories,
       totalCount,
       packedCount,
@@ -366,30 +486,98 @@ const TakeList = defineComponent({
       isHeaderExpanded,
       peekingActive,
       showResetModal,
+      showAddItemModal,
+      newItemName,
+      newItemCategory,
+      defaultItems,
+      addCustomItem,
+      removeCustomItem,
+      isWeatherMenuOpen,
+      selectedWeatherCity,
+      weatherData,
+      isWeatherLoading,
+      weatherCities,
       selectCountry,
       selectGender,
       toggleCategory,
       toggleItem,
       markAllPacked,
       resetList,
+      celebrateMore,
       confirmReset,
-      cancelReset
+      cancelReset,
+      selectWeatherCity,
+      getWeatherIcon
     };
   },
   template: `
     <LayoutComponent title="OutTaiwan - 打包清單">
+        <!-- Weather Floating Button & Panel -->
+        <div class="fixed bottom-8 left-8 z-40 flex flex-col-reverse items-start gap-4">
+            <!-- Weather Toggle Button -->
+            <button @click="isWeatherMenuOpen = !isWeatherMenuOpen" 
+                    class="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group border-4 relative overflow-hidden bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-white/40 text-slate-900 dark:text-slate-300 shadow-black/10 dark:shadow-black/40 dark:border-slate-400/40 dark:shadow-[0_0_20px_rgba(148,163,184,0.3)]">
+                <!-- Glow effect for dark mode -->
+                <div class="absolute inset-0 hidden dark:block bg-slate-400/10 animate-pulse"></div>
+                
+                <svg v-if="!isWeatherMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <!-- Weather Panel -->
+            <transition 
+                enter-active-class="transition duration-300 ease-out"
+                enter-from-class="transform -translate-x-8 opacity-0"
+                enter-to-class="transform translate-x-0 opacity-100"
+                leave-active-class="transition duration-200 ease-in"
+                leave-from-class="transform translate-x-0 opacity-100"
+                leave-to-class="transform -translate-x-8 opacity-0"
+            >
+                <div v-if="isWeatherMenuOpen" 
+                     class="w-72 glass-card p-6 rounded-3xl border border-white/20 shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <span>🌍</span> 目的地天氣
+                    </h3>
+                    
+                    <div class="mb-4">
+                        <select @change="selectWeatherCity" :value="selectedWeatherCity"
+                                class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-800 dark:text-white font-bold appearance-none cursor-pointer">
+                            <option v-for="city in weatherCities" :key="city.id" :value="city.id">
+                                {{ city.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div v-if="isWeatherLoading" class="flex justify-center py-6">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+                    </div>
+                    
+                    <div v-else-if="weatherData" class="bg-white/40 dark:bg-slate-800/40 rounded-2xl p-4 text-center border border-white/20">
+                        <div class="text-5xl mb-2">{{ getWeatherIcon(weatherData.weathercode) }}</div>
+                        <div class="text-3xl font-black text-slate-800 dark:text-white mb-1">
+                            {{ Math.round(weatherData.temperature) }}°C
+                        </div>
+                        <div class="text-sm text-slate-600 dark:text-slate-400 font-bold">
+                            風速: {{ weatherData.windspeed }} km/h
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </div>
+
         <!-- Step 1: Select Country -->
         <div v-if="currentStep === 1" class="step-container py-12">
-            <h1 class="text-4xl md:text-5xl font-black text-center mb-4 text-slate-900 dark:text-white">準備出發去哪裡？</h1>
-            <p class="text-center text-slate-700 dark:text-slate-300 mb-12 text-lg">選擇您的旅遊目的地，我們將為您準備專屬清單</p>
-            
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="(country, key) in countries" :key="key" 
                      @click="selectCountry(key, $event)"
                      class="selection-card glass-card p-8 rounded-3xl border border-white/20 shadow-lg hover:shadow-2xl transition-all cursor-pointer group">
                     <div class="text-6xl mb-4 text-center group-hover:scale-110 transition-transform">{{ country.flag }}</div>
                     <div class="text-2xl font-bold text-slate-800 dark:text-white text-center">{{ country.name }}</div>
-                    <div v-if="!country.implemented" class="mt-2 text-sm text-slate-400 dark:text-slate-500 italic text-center">(即將推出)</div>
+                    <div v-if="!country.implemented" class="mt-2 text-sm text-slate-600 dark:text-slate-500 italic text-center">(即將推出)</div>
                 </div>
             </div>
         </div>
@@ -402,9 +590,6 @@ const TakeList = defineComponent({
                 </svg>
                 重新選擇國家
             </button>
-            <h1 class="text-4xl md:text-5xl font-black text-center mb-4 text-slate-900 dark:text-white">您的性別？</h1>
-            <p class="text-center text-slate-700 dark:text-slate-300 mb-12 text-lg">這能幫助我們提供更精確的個人用品建議</p>
- 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
                 <div @click="selectGender('male', $event)" class="selection-card glass-card p-12 rounded-3xl border border-white/20 shadow-lg hover:shadow-2xl transition-all cursor-pointer group">
                     <div class="text-8xl mb-6 text-center group-hover:scale-110 transition-transform">👨</div>
@@ -435,34 +620,36 @@ const TakeList = defineComponent({
             </div>
 
             <!-- Header & Progress -->
-            <div class="glass-card p-6 md:p-8 rounded-[2.5rem] shadow-xl mb-10 sticky top-4 z-50 border border-white/20">
+            <div class="bg-gradient-to-br from-white/95 to-indigo-50/95 dark:from-slate-900/95 dark:to-indigo-950/95 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] shadow-[0_10px_40px_-10px_rgba(99,102,241,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(99,102,241,0.4)] mb-10 sticky top-4 z-50 border-2 border-indigo-500/20 dark:border-indigo-400/20">
                 <!-- Title & Mobile Toggle -->
-                <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center">
-                        <span class="mr-3">{{ countries[selectedCountry].flag }}</span>
+                <div @click="isHeaderExpanded = !isHeaderExpanded" class="flex items-center justify-between mb-6 cursor-pointer select-none group/header">
+                    <h1 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 flex items-center">
+                        <span class="mr-3 text-slate-900 dark:text-white">{{ countries[selectedCountry].flag }}</span>
                         <span class="truncate">{{ countries[selectedCountry].name }} 清單</span>
-                        <span class="ml-3 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-full uppercase tracking-widest">
+                        <span class="ml-3 text-xs font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full uppercase tracking-widest border border-indigo-200 dark:border-indigo-700/50">
                             {{ selectedGender === 'male' ? '👨' : '👩' }}
                         </span>
                     </h1>
                     
-                    <!-- Mobile Toggle Button -->
-                    <button @click="isHeaderExpanded = !isHeaderExpanded" 
-                            class="md:hidden p-3 text-slate-500 dark:text-slate-400 hover:bg-white/10 rounded-2xl transition-all">
+                    <!-- Toggle Button -->
+                    <div class="p-3 text-indigo-500 dark:text-indigo-400 group-hover/header:bg-indigo-100 dark:group-hover/header:bg-indigo-900/50 rounded-2xl transition-all">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transition-transform duration-300" :class="{ 'rotate-180': isHeaderExpanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
-                    </button>
+                    </div>
                 </div>
  
                 <!-- Collapsible Content -->
-                <div :class="{ 'hidden': !isHeaderExpanded }" class="md:block animate-in fade-in slide-in-from-top-4 duration-300">
+                <div v-show="isHeaderExpanded" class="animate-in fade-in slide-in-from-top-4 duration-300">
                     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                        <div class="flex gap-3 w-full md:w-auto">
+                        <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                            <button @click="showAddItemModal = true" class="flex-1 md:flex-none px-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold text-sm hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/30">
+                                新增物品
+                            </button>
                             <button @click="markAllPacked" class="flex-1 md:flex-none px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/30">
                                 全部完成
                             </button>
-                            <button @click="resetList" class="flex-1 md:flex-none px-6 py-3 bg-white/70 dark:bg-slate-800/70 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-2xl font-bold text-sm hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-95">
+                            <button @click="resetList" class="flex-1 md:flex-none px-6 py-3 bg-white/50 dark:bg-slate-800/50 text-indigo-900 dark:text-indigo-100 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl font-bold text-sm hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-95">
                                 重置清單
                             </button>
                         </div>
@@ -471,29 +658,80 @@ const TakeList = defineComponent({
                         <div class="hidden md:block flex-1 max-w-xs ml-8">
                             <div class="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-widest">
                                 <span>打包進度</span>
-                                <span>{{ progressPercent }}% ({{ packedCount }}/{{ totalCount }})</span>
+                                <span :class="progressPercent === 100 ? 'text-emerald-500' : ''">{{ progressPercent }}% ({{ packedCount }}/{{ totalCount }})</span>
                             </div>
-                            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                                <div class="h-full bg-indigo-600 dark:bg-indigo-400 transition-all duration-500" :style="{ width: progressPercent + '%' }"></div>
+                            <div class="w-full bg-indigo-100 dark:bg-indigo-900/50 rounded-full h-3 overflow-hidden shadow-inner">
+                                <div class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-500 dark:to-indigo-300 transition-all duration-1000 ease-out" :style="{ width: progressPercent + '%' }"></div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- All Done Celebration Block -->
+                    <transition 
+                        enter-active-class="transition duration-500 ease-out"
+                        enter-from-class="transform scale-95 opacity-0"
+                        enter-to-class="transform scale-100 opacity-100"
+                    >
+                        <div v-if="progressPercent === 100 && totalCount > 0" 
+                             class="mb-12 rounded-[3rem] bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl shadow-emerald-500/30 relative overflow-hidden group transition-all duration-500">
+                            
+                            <!-- Header / Toggle Area -->
+                            <div @click="isCelebrationExpanded = !isCelebrationExpanded" 
+                                 class="p-8 cursor-pointer flex items-center justify-between select-none">
+                                <div class="flex items-center gap-6">
+                                    <div class="text-5xl md:text-6xl animate-bounce">🎉</div>
+                                    <div>
+                                        <h2 class="text-2xl md:text-4xl font-black tracking-tight">太棒了！全部打包完成</h2>
+                                        <p v-if="!isCelebrationExpanded" class="text-emerald-950 dark:text-emerald-50 text-sm opacity-80">您的行李已經準備就緒...</p>
+                                    </div>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center transition-transform duration-500"
+                                     :class="{ 'rotate-180': !isCelebrationExpanded }">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Collapsible Content -->
+                            <transition
+                                enter-active-class="transition duration-500 ease-out"
+                                enter-from-class="transform -translate-y-4 opacity-0"
+                                enter-to-class="transform translate-y-0 opacity-100"
+                            >
+                                <div v-show="isCelebrationExpanded" class="px-8 pb-8 pt-0">
+                                    <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                                        <p class="text-emerald-950 dark:text-emerald-50 text-lg md:text-xl opacity-90 flex-1">您的行李已經準備就緒，可以安心出發囉！✈️</p>
+                                        <div class="flex gap-4">
+                                            <button @click.stop="celebrateMore" class="px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black hover:bg-emerald-50 transition-all active:scale-95 shadow-xl">
+                                                再慶祝一次
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </transition>
+
+                            <!-- Background Decoration -->
+                            <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"></div>
+                            <div class="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full -ml-24 -mb-24 blur-2xl pointer-events-none"></div>
+                        </div>
+                    </transition>
 
                     <!-- Progress Bar (Mobile) -->
                     <div class="md:hidden mb-6">
                         <div class="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-widest">
                             <span>打包進度</span>
-                            <span>{{ progressPercent }}%</span>
+                            <span :class="progressPercent === 100 ? 'text-emerald-500' : ''">{{ progressPercent }}%</span>
                         </div>
-                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
-                            <div class="h-full bg-indigo-600 dark:bg-indigo-400 transition-all duration-500" :style="{ width: progressPercent + '%' }"></div>
+                        <div class="w-full bg-indigo-100 dark:bg-indigo-900/50 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-500 dark:to-indigo-300 transition-all duration-1000 ease-out" :style="{ width: progressPercent + '%' }"></div>
                         </div>
                     </div>
  
                     <!-- Search & Filter -->
                     <div class="flex flex-col sm:flex-row gap-4">
                         <!-- Dropdown -->
-                        <select v-model="selectedCategoryFilter" class="py-4 px-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 outline-none transition-all dark:text-white font-bold appearance-none cursor-pointer">
+                        <select v-model="selectedCategoryFilter" class="py-4 px-4 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-indigo-100 dark:border-indigo-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white font-bold appearance-none cursor-pointer">
                             <option value="All">全部類別</option>
                             <option v-for="cat in categories" :key="cat.name" :value="cat.name">{{ cat.icon }} {{ cat.name }}</option>
                         </select>
@@ -501,8 +739,8 @@ const TakeList = defineComponent({
                         <!-- Search -->
                         <div class="relative flex-1">
                             <input v-model="searchQuery" type="text" placeholder="搜尋物品..." 
-                                   class="w-full py-4 pl-12 pr-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all dark:text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 top-4.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                   class="w-full py-4 pl-12 pr-4 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-indigo-100 dark:border-indigo-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white font-bold">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 top-4.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
@@ -510,60 +748,153 @@ const TakeList = defineComponent({
                 </div>
             </div>
  
-            <!-- 🚨 Absolute Must Forget Section -->
-            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-[2.5rem] p-8 shadow-2xl mb-12 text-white overflow-hidden relative group">
-                <div class="absolute -right-12 -top-12 text-white/10 text-[12rem] font-black rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-700">MUST</div>
-                <h2 class="text-3xl font-black mb-8 flex items-center relative z-10">
-                    <span class="mr-3">🚨</span> 絕對不能忘記
-                    <div v-if="mustItems.length > 0 && mustItems.every(i => i.checked)" class="ml-4 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm animate-in zoom-in duration-300" title="已完成">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
-                    <div v-for="item in mustItems" :key="item.id" 
-                         @click="toggleItem(item, $event)"
-                         class="bg-white/15 hover:bg-white/25 p-5 rounded-2xl cursor-pointer transition-all flex items-center gap-4 group/item"
-                         :class="{ 'opacity-50': item.checked }">
-                        <div class="w-6 h-6 rounded-lg border-2 border-white/50 flex items-center justify-center transition-all group-hover/item:border-white" :class="{ 'bg-white border-white': item.checked }">
-                            <svg v-if="item.checked" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
+            <!-- 🚨 Absolute Must Forget Section - Redesigned as a Block -->
+            <div v-if="mustItems.length > 0" class="glass-card rounded-3xl md:rounded-[2.5rem] shadow-xl border-2 border-red-500/20 mb-12 overflow-hidden transition-all duration-500"
+                 :class="{ 'bg-emerald-50/10 dark:bg-emerald-900/5 border-emerald-500/20': mustItems.every(i => i.checked) }">
+                
+                <!-- Section Header -->
+                <div @click="mustItemsExpanded = !mustItemsExpanded" 
+                     class="p-5 md:p-8 flex items-center justify-between cursor-pointer group select-none transition-colors"
+                     :class="mustItemsExpanded ? 'bg-red-50/30 dark:bg-red-900/10' : ''">
+                    <div class="flex items-center gap-3 md:gap-4">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-lg transition-all duration-500">
+                            <span class="text-lg md:text-xl">🚨</span>
                         </div>
-                        <span class="font-bold text-lg" :class="{ 'line-through opacity-70': item.checked }">{{ item.name }}</span>
+                        <div class="flex items-center gap-2 md:gap-3">
+                            <h2 class="text-lg md:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight whitespace-nowrap">絕對不能忘記</h2>
+                            <span class="text-xs md:text-sm font-bold text-red-600 dark:text-red-400 bg-red-100/50 dark:bg-red-900/30 px-2 py-0.5 rounded-lg"
+                                  :class="{ 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30': mustItems.every(i => i.checked) }">
+                                {{ mustItems.filter(i => i.checked).length }} / {{ mustItems.length }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center transition-transform duration-500"
+                         :class="{ 'rotate-180': mustItemsExpanded }">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                        </svg>
                     </div>
                 </div>
+
+                <transition 
+                    enter-active-class="transition duration-500 ease-out"
+                    enter-from-class="transform -translate-y-4 opacity-0"
+                    enter-to-class="transform translate-y-0 opacity-100"
+                    leave-active-class="transition duration-300 ease-in"
+                    leave-from-class="transform translate-y-0 opacity-100"
+                    leave-to-class="transform -translate-y-4 opacity-0"
+                >
+                    <div v-show="mustItemsExpanded" class="px-6 pb-6 md:px-8 md:pb-8">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                            <template v-for="item in mustItems" :key="item.id">
+                                <div @click="toggleItem(item, $event)" 
+                                     class="group relative p-5 md:p-6 rounded-3xl cursor-pointer transition-all duration-500 overflow-hidden border-2"
+                                     :class="[
+                                        item.checked 
+                                        ? 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60' 
+                                        : 'bg-white dark:bg-slate-900 border-red-600/20 dark:border-red-500/30 shadow-md hover:border-red-600 hover:shadow-lg hover:shadow-red-600/10'
+                                     ]">
+                                    
+                                    <div class="relative flex items-center gap-4">
+                                        <!-- Custom Checkbox -->
+                                        <div class="flex-shrink-0 w-10 h-10 rounded-xl border-2 flex items-center justify-center transition-all duration-500"
+                                             :class="[
+                                                item.checked 
+                                                ? 'bg-emerald-500 border-emerald-500 shadow-lg shadow-emerald-500/40' 
+                                                : 'bg-red-50 dark:bg-red-900/20 border-red-600/10 group-hover:border-red-600'
+                                             ]">
+                                            <svg v-if="item.checked" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                            </svg>
+                                            <div v-else class="w-2.5 h-2.5 rounded-full bg-red-600/30 group-hover:bg-red-600 group-hover:scale-125 transition-all duration-300"></div>
+                                        </div>
+                                        
+                                        <div class="flex-1 min-w-0">
+                                            <span class="block font-black text-lg md:text-xl transition-all duration-500 truncate" 
+                                                  :class="[
+                                                    item.checked 
+                                                    ? 'text-slate-400 line-through' 
+                                                    : 'text-slate-900 dark:text-white group-hover:translate-x-1'
+                                                  ]">
+                                                {{ item.name }}
+                                            </span>
+                                        </div>
+
+                                        <button v-if="item.isCustom" @click.stop="removeCustomItem(item.id)" class="text-slate-300 hover:text-red-600 transition-all p-2 -mr-2 hover:scale-125">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </transition>
             </div>
  
             <!-- Categories -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start">
                 <div v-for="category in filteredCategories" :key="category.name" 
-                     class="glass-card rounded-[2rem] shadow-xl border overflow-hidden transition-all duration-300"
-                     :class="category.items.length > 0 && category.items.every(i => i.checked) ? 'border-emerald-400/50 dark:border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-900/10' : 'border-white/20'">
-                    <h3 @click="toggleCategory(category.name)" class="text-xl md:text-2xl font-black p-5 md:p-6 text-slate-900 dark:text-white flex items-center justify-between cursor-pointer group hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors m-0">
-                        <div class="flex items-center">
-                            <span class="mr-3 p-2 bg-slate-100 dark:bg-slate-800 rounded-2xl">{{ category.icon }}</span> 
-                            {{ category.name }}
-                            <div v-if="category.items.length > 0 && category.items.every(i => i.checked)" class="ml-3 w-7 h-7 md:w-8 md:h-8 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center animate-in zoom-in duration-300" title="已完成">
-                                <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                     class="glass-card rounded-[2.5rem] shadow-xl border overflow-hidden transition-all duration-500"
+                     :class="category.items.length > 0 && category.items.every(i => i.checked) ? 'border-emerald-400/50 dark:border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-900/10' : 'border-white/20 dark:border-white/5'">
+                    
+                    <div @click="toggleCategory(category.name)" 
+                         class="p-6 md:p-8 flex items-center justify-between cursor-pointer group select-none transition-colors"
+                         :class="expandedCategories[category.name] ? 'bg-slate-50/50 dark:bg-slate-800/20' : ''">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform duration-300">
+                                {{ category.icon }}
+                            </div>
+                            <div>
+                                <h3 class="text-xl md:text-2xl font-black text-slate-900 dark:text-white m-0">{{ category.name }}</h3>
+                                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-1">
+                                    {{ category.items.filter(i => i.checked).length }} / {{ category.items.length }} ITEMS
+                                </p>
                             </div>
                         </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': expandedCategories[category.name] }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </h3>
-                    <div v-show="expandedCategories[category.name]" class="px-5 pb-5 md:px-6 md:pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div v-for="item in category.items" :key="item.id" 
-                             @click="toggleItem(item, $event)"
-                             class="flex items-center p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all group border border-transparent"
-                             :class="{ 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-900/20': item.checked }">
-                            <div class="w-6 h-6 rounded-lg border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center transition-all group-hover:border-slate-900 dark:group-hover:border-slate-400" :class="{ 'bg-slate-900 border-slate-900 dark:bg-slate-400 dark:border-slate-400': item.checked }">
-                                <svg v-if="item.checked" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white dark:text-slate-900" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        <div class="flex items-center gap-3">
+                            <div v-if="category.items.length > 0 && category.items.every(i => i.checked)" 
+                                 class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-in zoom-in duration-500">
+                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-transform duration-500"
+                                 :class="{ 'rotate-180': expandedCategories[category.name] }">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </div>
-                            <span class="ml-4 text-slate-900 dark:text-slate-200 font-bold text-lg" :class="{ 'line-through opacity-50': item.checked }">{{ item.name }}</span>
                         </div>
                     </div>
+
+                    <transition 
+                        enter-active-class="transition duration-500 ease-out"
+                        enter-from-class="transform -translate-y-4 opacity-0"
+                        enter-to-class="transform translate-y-0 opacity-100"
+                        leave-active-class="transition duration-300 ease-in"
+                        leave-from-class="transform translate-y-0 opacity-100"
+                        leave-to-class="transform -translate-y-4 opacity-0"
+                    >
+                        <div v-show="expandedCategories[category.name]" class="px-6 pb-6 md:px-8 md:pb-8 space-y-3">
+                            <div v-for="item in category.items" :key="item.id" 
+                                 @click="toggleItem(item, $event)"
+                                 class="flex items-center p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all group border border-transparent"
+                                 :class="{ 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-900/10 dark:border-white/5': item.checked }">
+                                <div class="w-7 h-7 rounded-xl border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all group-hover:border-slate-900 dark:group-hover:border-slate-400" 
+                                     :class="{ 'bg-slate-900 border-slate-900 dark:bg-slate-100 dark:border-slate-100': item.checked }">
+                                    <svg v-if="item.checked" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white dark:text-slate-900" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <span class="ml-4 text-slate-900 dark:text-slate-200 font-bold text-lg transition-all" 
+                                      :class="{ 'line-through opacity-60 translate-x-1 text-slate-500': item.checked }">
+                                    {{ item.name }}
+                                </span>
+                                
+                                <button v-if="item.isCustom" @click.stop="removeCustomItem(item.id)" class="ml-auto text-slate-600 dark:text-slate-300 hover:text-red-500 transition-all p-2 -mr-2 hover:scale-125">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </transition>
                 </div>
             </div>
 
@@ -591,6 +922,38 @@ const TakeList = defineComponent({
                             確定重置
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Item Modal -->
+        <div v-if="showAddItemModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showAddItemModal = false"></div>
+            <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full relative z-10 animate-scale-in">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-4">✨</div>
+                    <h3 class="text-2xl font-bold text-slate-800 dark:text-white">新增自訂物品</h3>
+                </div>
+                <div class="space-y-4 mb-8 text-left">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">物品名稱</label>
+                        <input v-model="newItemName" @keyup.enter="addCustomItem" type="text" placeholder="例如：護照套..." class="w-full py-3 px-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-slate-900 dark:text-white font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">選擇分類</label>
+                        <select v-model="newItemCategory" class="w-full py-3 px-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-slate-900 dark:text-white font-bold appearance-none cursor-pointer">
+                            <option value="🚨 絕對不能忘記">🚨 絕對不能忘記 (置頂)</option>
+                            <option v-for="cat in defaultItems.categories" :key="cat.name" :value="cat.name">{{ cat.icon }} {{ cat.name }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button @click="showAddItemModal = false" class="flex-1 py-3 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-95">
+                        取消
+                    </button>
+                    <button @click="addCustomItem" class="flex-1 py-3 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+                        確認新增
+                    </button>
                 </div>
             </div>
         </div>
